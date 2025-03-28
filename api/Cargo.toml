@@ -1,0 +1,14 @@
+[package]
+name = "flipcash-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+solana-program.workspace = true
+bytemuck.workspace = true
+steel.workspace = true
+num_enum.workspace = true
+spl-token.workspace = true
+
+[dev-dependencies]
+solana-sdk = "2.1.0"

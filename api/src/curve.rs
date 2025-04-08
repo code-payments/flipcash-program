@@ -9,28 +9,26 @@ pub struct ParsedExponentialCurve {
 
 impl ParsedExponentialCurve {
     /// Calculate price at a given supply
-    pub fn price(&self, current_supply: f64) -> f64 {
+    pub fn spot_price_at_supply(&self, current_supply: f64) -> f64 {
         // R'(S) = a * b * e^(c * s)
         self.a * self.b * (self.c * current_supply).exp()
     }
 
-    /// Calculate total cost to buy `num_tokens` starting at `current_supply` 
-    /// (tokens_to_usdc)
+    /// Calculate total cost to buy `num_tokens` starting at `current_supply`
+    /// “How much does it cost to get X tokens?”
     pub fn tokens_to_value(&self, current_supply: f64, tokens: f64) -> f64 {
         let new_supply = current_supply + tokens;
-        // Integral of price function: 
+        // Integral of price function:
         // R(S) = ∫(a * b * e^(c * s)) ds = (a * b / c) * e^(c * s)
         // R(S) = (a * b / c) * (e^(c * S) - e^(c * S0))
-        (self.a * self.b / self.c) * 
-            ((self.c * new_supply).exp() - (self.c * current_supply).exp())
+        (self.a * self.b / self.c) * ((self.c * new_supply).exp() - (self.c * current_supply).exp())
     }
 
     /// Calculate number of tokens received for a price `value` starting at `current_supply`
-    /// (usdc_to_tokens)
+    /// “How many tokens can I get for Y value?”
     pub fn value_to_tokens(&self, current_supply: f64, value: f64) -> f64 {
         // num_tokens = (1/c) * ln(amount / (a * b / c) + e^(c * current_supply)) - current_supply
-        let term = value / (self.a * self.b / self.c) + 
-            (self.c * current_supply).exp();
+        let term = value / (self.a * self.b / self.c) + (self.c * current_supply).exp();
         (1.0 / self.c) * term.ln() - current_supply
     }
 }
@@ -79,17 +77,22 @@ mod tests {
 
         let tokens = curve.value_to_tokens(current_supply, usdc);
         let actual_cost = curve.tokens_to_value(current_supply, tokens);
-        
+
         println!("Tokens received for {} dollars: {}", usdc, tokens);
         println!("Actual cost for {} tokens: {}", tokens, actual_cost);
-        println!("Price at supply {}: {}", current_supply, curve.price(current_supply));
+        println!(
+            "Price at supply {}: {}",
+            current_supply,
+            curve.spot_price_at_supply(current_supply)
+        );
+
 
         // Extended tests from table
         struct TestCase {
             supply: f64,
-            expected_price: f64,      // R'(S)
-            expected_total: f64,      // R(S)
-            expected_marketcap: f64,  // Spot Marketcap
+            expected_price: f64,     // R'(S)
+            expected_total: f64,     // R(S)
+            expected_marketcap: f64, // Spot Marketcap
         }
 
         let test_cases = vec![
@@ -135,42 +138,104 @@ mod tests {
 
         for (i, case) in test_cases.iter().enumerate() {
             // Test price (R'(S))
-            let calculated_price = curve.price(case.supply);
+            let calculated_price = curve.spot_price_at_supply(case.supply);
             assert!(
                 (calculated_price - case.expected_price).abs() < 0.0001,
                 "Test case {}: Price at supply {} - expected {}, got {}",
-                i, case.supply, case.expected_price, calculated_price
+                i,
+                case.supply,
+                case.expected_price,
+                calculated_price
             );
 
             // Test total value (R(S)) from 0 to current supply
             let calculated_total = curve.tokens_to_value(0.0, case.supply);
             assert!(
-                (calculated_total - case.expected_total).abs() / case.expected_total.max(1.0) < 0.01, // 1% tolerance, avoid division by zero
+                (calculated_total - case.expected_total).abs() / case.expected_total.max(1.0)
+                    < 0.01, // 1% tolerance, avoid division by zero
                 "Test case {}: Total value at supply {} - expected {}, got {}",
-                i, case.supply, case.expected_total, calculated_total
+                i,
+                case.supply,
+                case.expected_total,
+                calculated_total
             );
 
             // Test incremental value between points
-            let incremental_value = curve.tokens_to_value(previous_supply, case.supply - previous_supply);
+            let incremental_value =
+                curve.tokens_to_value(previous_supply, case.supply - previous_supply);
             let expected_increment = case.expected_total - previous_total;
-            if i > 0 {  // Skip first case since no previous point
+            if i > 0 {
+                // Skip first case since no previous point
                 assert!(
-                    (incremental_value - expected_increment).abs() / expected_increment.max(1.0) < 0.01,
+                    (incremental_value - expected_increment).abs() / expected_increment.max(1.0)
+                        < 0.01,
                     "Test case {}: Incremental value from {} to {} - expected {}, got {}",
-                    i, previous_supply, case.supply, expected_increment, incremental_value
+                    i,
+                    previous_supply,
+                    case.supply,
+                    expected_increment,
+                    incremental_value
                 );
             }
 
             // Test spot market cap (supply * current price)
             let calculated_marketcap = case.supply * calculated_price;
             assert!(
-                (calculated_marketcap - case.expected_marketcap).abs() / case.expected_marketcap.max(1.0) < 0.01, // 1% tolerance, avoid division by zero
+                (calculated_marketcap - case.expected_marketcap).abs()
+                    / case.expected_marketcap.max(1.0)
+                    < 0.01, // 1% tolerance, avoid division by zero
                 "Test case {}: Market cap at supply {} - expected {}, got {}",
-                i, case.supply, case.expected_marketcap, calculated_marketcap
+                i,
+                case.supply,
+                case.expected_marketcap,
+                calculated_marketcap
             );
 
             previous_supply = case.supply;
             previous_total = case.expected_total;
         }
+    }
+
+    #[test]
+    fn generate_curve_table() {
+        let curve = ParsedExponentialCurve {
+            a: 11400.2301,
+            b: 0.00000087717527,
+            c: 0.00000087717527,
+        };
+
+
+
+
+        println!("|------|------------|---------------------|---------------------|");
+        println!("| %    | S          | R(S)                | R'(S)               |");
+        println!("|------|------------|---------------------|---------------------|");
+        // for (i, usdc_val) in cases.iter().enumerate() {
+            //let usdc = *usdc_val as f64; // We're assuming this is pre-scaled by 6 decimal places
+            //                             // (not the token program number)
+            //let tokens = curve.value_to_tokens(0.0, usdc);
+            //let actual_cost = curve.tokens_to_value(0.0, tokens);
+            //
+            //let supply = tokens; // supply is the same as tokens in this case
+            //let spot_price = curve.spot_price_at_supply(supply);
+     
+    let mut supply : f64 = 0.0;
+    for i in 0..101 {
+        let buy_amount : f64 = 210_000.0;
+        let cost = curve.tokens_to_value(0.0, supply);
+        supply = supply + buy_amount;
+        let spot_price = curve.spot_price_at_supply(supply);
+
+        println!(
+            "| {:<4} | {:<18} | ${:<18} | ${:<18} |",
+            format!("{}%", i),
+            format!("{:.18}", supply),
+            format!("{:.18}", cost),
+            format!("{:.18}", spot_price)
+        );
+    }
+
+        println!("|------|------------|---------------------|---------------------|");
+        //assert!(false, "Curve1 table generated");
     }
 }

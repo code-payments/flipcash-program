@@ -13,11 +13,9 @@ construct_uint! {
 pub mod consts;
 pub mod unsigned;
 pub mod signed;
-pub mod curve;
 pub mod exp;
 pub mod log;
 
 pub use consts::*;
 pub use unsigned::*;
 pub use signed::*;
-pub use curve::*;

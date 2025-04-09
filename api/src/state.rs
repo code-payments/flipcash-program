@@ -1,6 +1,6 @@
 use steel::*;
 use crate::consts::*;
-use crate::curve::ExponentialCurve;
+use crate::curve::RawExponentialCurve;
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
@@ -77,7 +77,7 @@ pub struct LiquidityPool {
     pub sale_cap: u64,            // Maximum sale amount (in target tokens, 0 is no limit)
 
     // Bonding curve parameters
-    pub curve: ExponentialCurve,
+    pub curve: RawExponentialCurve,
     pub supply_from_bonding: u64,
 
     // Bump seeds for PDAs

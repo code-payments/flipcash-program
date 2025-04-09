@@ -1,6 +1,6 @@
 use steel::*;
 use crate::prelude::*;
-use crate::curve::{ExponentialCurve, ParsedExponentialCurve};
+use crate::curve::{ExponentialCurve, RawExponentialCurve};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, TryFromPrimitive)]
@@ -75,7 +75,7 @@ impl InitializeCurrencyIx {
 #[derive(Debug)]
 pub struct ParsedInitializePoolIx {
     pub supply: u64, // Number of tokens to mint to the pool
-    pub curve: ParsedExponentialCurve,
+    pub curve: ExponentialCurve,
     pub purchase_cap: u64,
     pub sale_cap: u64,
     pub buy_fee: u32,
@@ -91,7 +91,7 @@ pub struct ParsedInitializePoolIx {
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct InitializePoolIx {
     pub supply: [u8; 8],
-    pub curve: ExponentialCurve,
+    pub curve: RawExponentialCurve,
     pub purchase_cap: [u8; 8],
     pub sale_cap: [u8; 8],
     pub buy_fee: [u8; 4],
@@ -108,7 +108,7 @@ impl InitializePoolIx {
     pub fn from_struct(parsed: ParsedInitializePoolIx) -> Self {
         Self {
             supply: parsed.supply.to_le_bytes(),
-            curve: ExponentialCurve::from_struct(parsed.curve),
+            curve: RawExponentialCurve::from_struct(parsed.curve),
             purchase_cap: parsed.purchase_cap.to_le_bytes(),
             sale_cap: parsed.sale_cap.to_le_bytes(),
             buy_fee: parsed.buy_fee.to_le_bytes(),

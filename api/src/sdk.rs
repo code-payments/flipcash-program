@@ -47,7 +47,7 @@ pub fn build_initialize_pool_ix(
     base_mint: Pubkey,    // Probably USDC
 
     supply: u64,
-    curve: ParsedExponentialCurve,
+    curve: ExponentialCurve,
     purchase_cap: u64,
     sale_cap: u64,
     buy_fee: u32,

@@ -1,6 +1,6 @@
 use steel::*;
 use solana_program::msg;
-use crate::consts::*;
+use crate::{consts::*, math::UnsignedNumeric};
 
 pub fn check_condition(condition: bool, message: &str) -> ProgramResult {
     if !condition {
@@ -58,20 +58,151 @@ pub fn from_name(val: &[u8]) -> String {
     String::from_utf8(name_bytes).unwrap()
 }
 
-/// Convert to f64 whole value (e.g., 10_000_000 with 6 decimals -> 10.0)
-pub fn to_decimal(amount: u64, decimal_places: u8) -> f64 {
-    amount as f64 / 10f64.powi(decimal_places as i32)
+/// Convert token amount to a UnsignedNumeric value (e.g., 10_000_000 with 6 decimals -> 10.0 UnsignedNumeric)
+pub fn to_numeric(amount: u64, decimal_places: u8) -> Option<UnsignedNumeric> {
+    assert!(decimal_places <= 18, "Decimal places too high");
+
+    let scale = 10u64.pow(decimal_places as u32);
+    let amount_scaled = UnsignedNumeric::new(amount.into())?;
+    let divisor = UnsignedNumeric::new(scale.into())?;
+
+    amount_scaled.checked_div(&divisor)
 }
 
-/// Create from f64 whole token value (e.g., 10.0 with 6 decimals -> 10_000_000)
-pub fn from_decimal(value: f64, decimal_places: u8) -> u64 {
-    (value * 10f64.powi(decimal_places as i32)) as u64
+/// Convert UnsignedNumeric into a token amount value (e.g., 10.0 UnsignedNumeric with 6 decimals -> 10_000_000)
+pub fn from_numeric(value: UnsignedNumeric, decimal_places: u8) -> Option<u64> {
+    assert!(decimal_places <= 18, "Decimal places too high");
+
+    let scale = 10u64.pow(decimal_places as u32);
+    let multiplier = UnsignedNumeric::new(scale.into())?;
+
+    let scaled = value.checked_mul(&multiplier)?;
+    let imprecise = scaled.to_imprecise()?;
+
+    u64::try_from(imprecise).ok()
 }
 
-pub fn to_basis_points(value: f64) -> u32 {
-    (value * 10_000.0) as u32
+/// Converts basis points (e.g. 123) into an UnsignedNumeric (e.g. 0.0123)
+pub fn from_basis_points(bps: u32) -> Option<UnsignedNumeric> {
+    let bps_numeric = UnsignedNumeric::new(bps as u128)?;
+    let divisor = UnsignedNumeric::new(10_000)?;
+    bps_numeric.checked_div(&divisor)
 }
 
-pub fn from_basis_points(value: u32) -> f64 {
-    value as f64 / 10_000.0
+/// Converts an UnsignedNumeric (e.g. 0.0123) into basis points (e.g. 123)
+pub fn to_basis_points(numeric: &UnsignedNumeric) -> Option<u32> {
+    let multiplier = UnsignedNumeric::new(10_000)?; // scale to bps
+    let bps = numeric.checked_mul(&multiplier)?.to_imprecise()?;
+    u32::try_from(bps).ok()
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::math::InnerUint;
+
+    #[test]
+    fn test_to_name() {
+        let name = "TestName";
+        let name_bytes = to_name(name);
+        assert_eq!(name_bytes[..name.len()], *name.as_bytes());
+    }
+
+    #[test]
+    fn test_from_name() {
+        let name_bytes = [84, 101, 115, 116, 78, 97, 109, 101, 0, 0];
+        let name = from_name(&name_bytes);
+        assert_eq!(name, "TestName");
+    }
+
+    #[test]
+    fn test_to_numeric_simple() {
+        // 10_000_000 with 6 decimals = 10.0
+        let result = to_numeric(10_000_000, 6).unwrap();
+        assert_eq!(result.to_string(), "10.000000000000000000");
+    }
+
+    #[test]
+    fn test_from_numeric_simple() {
+        // 10.0 with 6 decimals = 10_000_000
+        let numeric = UnsignedNumeric::new(10).unwrap();
+        let result = from_numeric(numeric, 6).unwrap();
+        assert_eq!(result, 10_000_000);
+    }
+
+    #[test]
+    fn test_to_numeric_with_decimals() {
+        // 123456 with 3 decimals = 123.456
+        let result = to_numeric(123_456, 3).unwrap();
+        assert_eq!(result.to_string(), "123.456000000000000000");
+    }
+
+    #[test]
+    fn test_from_numeric_with_decimals() {
+        // 123.456 with 3 decimals = 123456
+        let base = UnsignedNumeric::new(123).unwrap();
+        let decimal = UnsignedNumeric::from_scaled_u128(456_000_000_000_000_000);
+        let value = base.checked_add(&decimal).unwrap();
+        let result = from_numeric(value, 3).unwrap();
+        assert_eq!(result, 123_456);
+    }
+
+    #[test]
+    fn test_to_numeric_zero() {
+        let result = to_numeric(0, 6).unwrap();
+        assert_eq!(result.to_string(), "0.000000000000000000");
+    }
+
+    #[test]
+    fn test_from_numeric_zero() {
+        let result = from_numeric(UnsignedNumeric::zero(), 6).unwrap();
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn test_roundtrip_decimal_6() {
+        // amount = 1234567890 with 6 decimals => numeric => back to amount
+        let amount = 1_234_567_890;
+        let decimal_places = 6;
+        let numeric = to_numeric(amount, decimal_places).unwrap();
+        let result = from_numeric(numeric, decimal_places).unwrap();
+        assert_eq!(result, amount);
+    }
+
+    #[test]
+    fn test_roundtrip_decimal_9() {
+        let amount = 123_456_789;
+        let decimal_places = 9;
+        let numeric = to_numeric(amount, decimal_places).unwrap();
+        let result = from_numeric(numeric, decimal_places).unwrap();
+        assert_eq!(result, amount);
+    }
+
+    #[test]
+    fn test_decimal_overflow_rejected() {
+        // decimal_places > 18 should panic
+        let result = std::panic::catch_unwind(|| {
+            to_numeric(1, 19)
+        });
+        assert!(result.is_err());
+
+        let result = std::panic::catch_unwind(|| {
+            from_numeric(UnsignedNumeric::new(1).unwrap(), 19)
+        });
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_basis_points_roundtrip() {
+        let percent = UnsignedNumeric::new(123).unwrap() // 123% = 1.23
+            .checked_div(&UnsignedNumeric::new(100).unwrap())
+            .unwrap();
+        let bps = to_basis_points(&percent).unwrap();
+        assert_eq!(bps, 12_300);
+
+        let back = from_basis_points(bps).unwrap();
+        assert!(percent.almost_eq(&back, InnerUint::from(1_000_000_000)));
+    }
+}
+

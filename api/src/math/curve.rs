@@ -1,4 +1,5 @@
-use super::unsigned::PreciseNumber;
+use steel::*;
+use super::unsigned::UnsignedNumeric;
 
 // Constants for the default curve that goes from $0.01 to $1_000_000 over 21_000_000 tokens
 pub const A: u128 = 11400_230149967394933471;
@@ -6,23 +7,23 @@ pub const B: u128 = 0_000000877175273521;
 pub const C: u128 = 0_000000877175273521;
 
 #[derive(Debug, Clone)]
-pub struct PreciseExponentialCurve {
-    pub a: PreciseNumber,
-    pub b: PreciseNumber,
-    pub c: PreciseNumber,
+pub struct ExponentialCurve {
+    pub a: UnsignedNumeric,
+    pub b: UnsignedNumeric,
+    pub c: UnsignedNumeric,
 }
 
-impl PreciseExponentialCurve {
+impl ExponentialCurve {
     pub fn default() -> Self {
         Self {
-            a: PreciseNumber::from_scaled_u128(A),
-            b: PreciseNumber::from_scaled_u128(B),
-            c: PreciseNumber::from_scaled_u128(C),
+            a: UnsignedNumeric::from_scaled_u128(A),
+            b: UnsignedNumeric::from_scaled_u128(B),
+            c: UnsignedNumeric::from_scaled_u128(C),
         }
     }
 
     /// Calculate token price at a given supply
-    pub fn spot_price_at_supply(&self, current_supply: &PreciseNumber) -> Option<PreciseNumber> {
+    pub fn spot_price_at_supply(&self, current_supply: &UnsignedNumeric) -> Option<UnsignedNumeric> {
         // R'(S) = a * b * e^(c * s)
 
         let c_times_s = self.c.checked_mul(current_supply)?;
@@ -34,9 +35,9 @@ impl PreciseExponentialCurve {
     /// “How much does it cost to get X tokens?”
     pub fn tokens_to_value(
         &self,
-        current_supply: &PreciseNumber,
-        tokens: &PreciseNumber,
-    ) -> Option<PreciseNumber> {
+        current_supply: &UnsignedNumeric,
+        tokens: &UnsignedNumeric,
+    ) -> Option<UnsignedNumeric> {
         // Integral of price function:
         // R(S) = ∫(a * b * e^(c * s)) ds = (a * b / c) * e^(c * s)
         // R(S) = (a * b / c) * (e^(c * S) - e^(c * S0))
@@ -60,9 +61,9 @@ impl PreciseExponentialCurve {
     /// “How many tokens can I get for Y value?”
     pub fn value_to_tokens(
         &self,
-        current_supply: &PreciseNumber,
-        value: &PreciseNumber,
-    ) -> Option<PreciseNumber> {
+        current_supply: &UnsignedNumeric,
+        value: &UnsignedNumeric,
+    ) -> Option<UnsignedNumeric> {
         // num_tokens = (1/c) * ln(amount / (a * b / c) + e^(c * current_supply)) - current_supply
 
         let ab_over_c = self.a.checked_mul(&self.b)?.checked_div(&self.c)?;
@@ -77,68 +78,40 @@ impl PreciseExponentialCurve {
     }
 }
 
-//#[repr(C)]
-//#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
-//pub struct RawExponentialCurve {
-//    a: [u8; 24],
-//    b: [u8; 24],
-//    c: [u8; 24],
-//}
-//
-//impl RawExponentialCurve {
-//    pub fn from_struct(parsed: ParsedExponentialCurve) -> Self {
-//        Self {
-//            a: parsed.a.to_bytes(),
-//            b: parsed.b.to_bytes(),
-//            c: parsed.c.to_bytes(),
-//        }
-//    }
-//
-//    pub fn to_struct(&self) -> Result<ParsedExponentialCurve, std::io::Error> {
-//        Ok(ParsedExponentialCurve {
-//            a: f64::from_le_bytes(self.a),
-//            b: f64::from_le_bytes(self.b),
-//            c: f64::from_le_bytes(self.c),
-//        })
-//    }
-//}
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
+pub struct RawExponentialCurve {
+    a: [u8; 24],
+    b: [u8; 24],
+    c: [u8; 24],
+}
 
+impl RawExponentialCurve {
+    pub fn from_struct(parsed: ExponentialCurve) -> Self {
+        Self {
+            a: parsed.a.to_bytes(),
+            b: parsed.b.to_bytes(),
+            c: parsed.c.to_bytes(),
+        }
+    }
 
-//#[repr(C)]
-//#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
-//pub struct ExponentialCurve {
-//    pub a: [u8; 8],
-//    pub b: [u8; 8],
-//    pub c: [u8; 8],
-//}
-//
-//impl ExponentialCurve {
-//    pub fn from_struct(parsed: ParsedExponentialCurve) -> Self {
-//        Self {
-//            a: parsed.a.to_le_bytes(),
-//            b: parsed.b.to_le_bytes(),
-//            c: parsed.c.to_le_bytes(),
-//        }
-//    }
-//
-//    pub fn to_struct(&self) -> Result<ParsedExponentialCurve, std::io::Error> {
-//        Ok(ParsedExponentialCurve {
-//            a: f64::from_le_bytes(self.a),
-//            b: f64::from_le_bytes(self.b),
-//            c: f64::from_le_bytes(self.c),
-//        })
-//    }
-//}
-
+    pub fn to_struct(&self) -> Result<ExponentialCurve, std::io::Error> {
+        Ok(ExponentialCurve {
+            a: UnsignedNumeric::from_bytes(&self.a),
+            b: UnsignedNumeric::from_bytes(&self.b),
+            c: UnsignedNumeric::from_bytes(&self.c),
+        })
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::unsigned::PreciseNumber;
+    use crate::math::unsigned::UnsignedNumeric;
 
-    fn assert_approx_eq(actual: &PreciseNumber, expected: &PreciseNumber, tolerance: u128) {
+    fn assert_approx_eq(actual: &UnsignedNumeric, expected: &UnsignedNumeric, tolerance: u128) {
         let (diff, _) = actual.unsigned_sub(expected);
-        let tol = PreciseNumber::from_scaled_u128(tolerance);
+        let tol = UnsignedNumeric::from_scaled_u128(tolerance);
         assert!(
             diff.less_than_or_equal(&tol),
             "Mismatch: got {}, expected {}, diff = {}",
@@ -154,9 +127,9 @@ mod tests {
         const ONE_MILLION: u128 = 1_000_000_000_000_000_000_000_000; // $1_000_000 (ending price)
         const TWENTY_ONE_MILLION: u128 = 21_000_000_000_000_000_000_000_000; // 21_000_000 tokens
 
-        let price_start = PreciseNumber::from_scaled_u128(ONE_PENNY);
-        let price_end = PreciseNumber::from_scaled_u128(ONE_MILLION);
-        let supply_diff = PreciseNumber::from_scaled_u128(TWENTY_ONE_MILLION);
+        let price_start = UnsignedNumeric::from_scaled_u128(ONE_PENNY);
+        let price_end = UnsignedNumeric::from_scaled_u128(ONE_MILLION);
+        let supply_diff = UnsignedNumeric::from_scaled_u128(TWENTY_ONE_MILLION);
 
         println!("price_start: {}", price_start.to_string());
         println!("price_end: {}", price_end.to_string());
@@ -200,18 +173,18 @@ mod tests {
         println!("b = {}", b.to_string());
         println!("c = {}", c.to_string());
 
-        assert_approx_eq(&a, &PreciseNumber::from_scaled_u128(A), 0);
-        assert_approx_eq(&b, &PreciseNumber::from_scaled_u128(B), 0);
-        assert_approx_eq(&c, &PreciseNumber::from_scaled_u128(C), 0);
+        assert_approx_eq(&a, &UnsignedNumeric::from_scaled_u128(A), 0);
+        assert_approx_eq(&b, &UnsignedNumeric::from_scaled_u128(B), 0);
+        assert_approx_eq(&c, &UnsignedNumeric::from_scaled_u128(C), 0);
     }
 
     #[test]
     fn generate_curve_table() {
-        let a = PreciseNumber::from_scaled_u128(A);
-        let b = PreciseNumber::from_scaled_u128(B);
-        let c = PreciseNumber::from_scaled_u128(C);
+        let a = UnsignedNumeric::from_scaled_u128(A);
+        let b = UnsignedNumeric::from_scaled_u128(B);
+        let c = UnsignedNumeric::from_scaled_u128(C);
 
-        let curve = PreciseExponentialCurve {
+        let curve = ExponentialCurve {
             a: a.clone(),
             b: b.clone(),
             c: c.clone(),
@@ -221,13 +194,12 @@ mod tests {
         println!("| %    | S              | R(S)                              | R'(S)                       |");
         println!("|------|----------------|-----------------------------------|-----------------------------|");
 
-        let zero = PreciseNumber::zero();
-        let buy_amount = PreciseNumber::new(210000).unwrap();
+        let zero = UnsignedNumeric::zero();
+        let buy_amount = UnsignedNumeric::new(210_000).unwrap(); // 1% at a time
         let mut supply = zero.clone();
 
         for i in 0..101 {
             let cost = curve.tokens_to_value(&zero, &supply).unwrap();
-
             let spot_price = curve.spot_price_at_supply(&supply).unwrap();
 
             println!(
@@ -242,6 +214,6 @@ mod tests {
         }
 
         println!("|------|----------------|-----------------------------------|-----------------------------|");
-        assert!(false);
+        //assert!(false);
     }
 }

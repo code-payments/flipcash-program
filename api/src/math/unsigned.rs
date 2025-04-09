@@ -1,9 +1,13 @@
-use super::InnerUint;
 use super::consts::*;
-use super::signed::SignedPreciseNumber;
+use super::signed::SignedNumeric;
+use super::InnerUint;
 use std::convert::*;
 
-/// A `PreciseNumber` is an unsigned 192-bit fixed-point number with 18 decimal places of
+// Based on the following implementations:
+// https://github.com/solana-labs/solana-program-library/blob/v2.0/libraries/math/src/precise_number.rs
+// https://github.com/StrataFoundation/strata/blob/master/programs/spl-token-bonding/src/precise_number.rs
+
+/// A `UnsignedNumeric` is an unsigned 192-bit fixed-point number with 18 decimal places of
 /// precision.
 ///
 /// ### Internal Representation
@@ -35,7 +39,7 @@ use std::convert::*;
 ///
 /// When you write:
 /// ```text
-/// let a = PreciseNumber::from([0, 0, 1]);
+/// let a = UnsignedNumeric::from([0, 0, 1]);
 /// ```
 /// This initializes the internal 192-bit value with the array `[0, 0, 1]`.
 /// In this representation:
@@ -58,27 +62,26 @@ use std::convert::*;
 /// ```
 ///
 /// This system allows for both extremely high precision and a vast dynamic range,
-/// making [`PreciseNumber`] ideal for financial, scientific, or blockchain applications
+/// making [`UnsignedNumeric`] ideal for financial, scientific, or blockchain applications
 /// where `f64` or even `u128` would lose accuracy or overflow.
 #[derive(Clone, Debug, PartialEq)]
-pub struct PreciseNumber {
+pub struct UnsignedNumeric {
     /// Internal value stored as a 192-bit integer, scaled by ONE (10^18).
     pub value: InnerUint,
 }
 
-impl PreciseNumber {
-
-    /// Returns a `PreciseNumber` representing 0.0.
+impl UnsignedNumeric {
+    /// Returns a `UnsignedNumeric` representing 0.0.
     pub fn zero() -> Self {
         Self { value: zero() }
     }
 
-    /// Returns a `PreciseNumber` representing 1.0.
+    /// Returns a `UnsignedNumeric` representing 1.0.
     pub fn one() -> Self {
         Self { value: one() }
     }
 
-    /// Constructs a `PreciseNumber` from an integer value by scaling it by ONE (10^18).
+    /// Constructs a `UnsignedNumeric` from an integer value by scaling it by ONE (10^18).
     /// For example, `new(7)` produces `7.0`.
     /// Returns None on overflow during scaling.
     pub fn new(value: u128) -> Option<Self> {
@@ -86,7 +89,7 @@ impl PreciseNumber {
         Some(Self { value })
     }
 
-    /// Constructs a `PreciseNumber` from a `u128` that is already scaled by ONE (i.e. in fixed-point space).
+    /// Constructs a `UnsignedNumeric` from a `u128` that is already scaled by ONE (i.e. in fixed-point space).
     /// This bypasses internal multiplication and is useful for constants or pre-scaled data.
     pub fn from_scaled_u128(value: u128) -> Self {
         Self {
@@ -94,7 +97,7 @@ impl PreciseNumber {
         }
     }
 
-    /// Constructs a `PreciseNumber` directly from a raw `[u64; 3]` value.
+    /// Constructs a `UnsignedNumeric` directly from a raw `[u64; 3]` value.
     /// The input is interpreted as already scaled (fixed-point).
     /// Layout is little-endian: `[lo, mid, hi]` = `lo + (mid << 64) + (hi << 128)`.
     pub fn from_values(lo: u64, mid: u64, hi: u64) -> Self {
@@ -103,7 +106,7 @@ impl PreciseNumber {
         }
     }
 
-    /// Converts this `PreciseNumber` into a raw `[u8; 24]` representation.
+    /// Converts this `UnsignedNumeric` into a raw `[u8; 24]` representation.
     pub fn to_bytes(&self) -> [u8; 24] {
         let InnerUint([lo, mid, hi]) = self.value;
 
@@ -115,7 +118,7 @@ impl PreciseNumber {
         bytes
     }
 
-    /// Converts a raw `[u8; 24]` representation into a `PreciseNumber`.
+    /// Converts a raw `[u8; 24]` representation into a `UnsignedNumeric`.
     pub fn from_bytes(bytes: &[u8; 24]) -> Self {
         let lo = u64::from_le_bytes(bytes[0..8].try_into().unwrap());
         let mid = u64::from_le_bytes(bytes[8..16].try_into().unwrap());
@@ -126,7 +129,7 @@ impl PreciseNumber {
         }
     }
 
-    /// Converts this `PreciseNumber` into a regular `u128` by dividing by ONE.
+    /// Converts this `UnsignedNumeric` into a regular `u128` by dividing by ONE.
     /// Applies rounding correction to avoid always flooring the result.
     /// Returns `None` if the division would overflow or the result exceeds `u128::MAX`.
     pub fn to_imprecise(&self) -> Option<u128> {
@@ -136,11 +139,11 @@ impl PreciseNumber {
             .map(|v| v.as_u128())
     }
 
-    /// Converts this `PreciseNumber` into a signed version,
-    /// wrapping it in a `SignedPreciseNumber` with `is_negative = false`.
+    /// Converts this `UnsignedNumeric` into a signed version,
+    /// wrapping it in a `SignedNumeric` with `is_negative = false`.
     /// Useful when beginning arithmetic that may result in negative values.
-    pub fn signed(&self) -> SignedPreciseNumber {
-        SignedPreciseNumber {
+    pub fn signed(&self) -> SignedNumeric {
+        SignedNumeric {
             value: self.clone(),
             is_negative: false,
         }
@@ -153,7 +156,7 @@ impl PreciseNumber {
         InnerUint::from(ONE / 2)
     }
 
-    /// Compares two `PreciseNumber`s for approximate equality,
+    /// Compares two `UnsignedNumeric`s for approximate equality,
     /// allowing for a configurable `precision` window.
     pub fn almost_eq(&self, rhs: &Self, precision: InnerUint) -> bool {
         let (difference, _) = self.unsigned_sub(rhs);
@@ -221,7 +224,7 @@ impl PreciseNumber {
         }
     }
 
-    /// Multiplies two `PreciseNumber`s and returns the result in fixed-point space.
+    /// Multiplies two `UnsignedNumeric`s and returns the result in fixed-point space.
     /// Automatically divides by ONE to maintain correct scaling, and applies rounding correction.
     /// Falls back to a reduced-precision path if full multiplication would overflow.
     pub fn checked_mul(&self, rhs: &Self) -> Option<Self> {
@@ -274,201 +277,13 @@ impl PreciseNumber {
     pub fn to_string(&self) -> String {
         let whole = self.floor().unwrap().to_imprecise().unwrap();
         let decimals = self
-            .checked_sub(&PreciseNumber::new(whole).unwrap())
+            .checked_sub(&UnsignedNumeric::new(whole).unwrap())
             .unwrap()
-            .checked_mul(&PreciseNumber::new(ONE).unwrap())
+            .checked_mul(&UnsignedNumeric::new(ONE).unwrap())
             .unwrap()
             .to_imprecise()
             .unwrap();
         format!("{}.{:0>width$}", whole, decimals, width = 18)
-    }
-
-    /// Frexp breaks f into a normalized fraction and an integral power of two. It returns frac and
-    /// exp satisfying f == frac × 2**exp, with the absolute value of frac in the interval [½, 1).
-    ///
-    /// Special cases are:
-    ///	Frexp(±0) = ±0, 0
-    ///	Frexp(±Inf) = ±Inf, 0
-    ///	Frexp(NaN) = NaN, 0
-    fn frexp(&self) -> Option<(Self, i64)> {
-        if self.eq(&ZERO_PREC) {
-            Some((ZERO_PREC.clone(), 0))
-        } else if self.less_than(&ONE_PREC) {
-            let first_leading = self.value.0[0].leading_zeros();
-            let one_leading = ONE_PREC.value.0[0].leading_zeros();
-            let bits = i64::from(first_leading.checked_sub(one_leading).unwrap());
-            let frac = PreciseNumber {
-                value: self.value << bits,
-            };
-            if frac.less_than(&HALF) {
-                Some((frac.checked_mul(&TWO_PREC).unwrap(), -bits - 1))
-            } else {
-                Some((frac, -bits))
-            }
-        } else {
-            let bits = 128_i64.checked_sub(i64::from(self.to_imprecise()?.leading_zeros()))?;
-            let frac = PreciseNumber {
-                value: self.value >> bits,
-            };
-            if frac.less_than(&HALF) {
-                Some((frac.checked_mul(&TWO_PREC).unwrap(), bits - 1))
-            } else {
-                Some((frac, bits))
-            }
-        }
-    }
-
-    /// Modified from the original to support precise numbers instead of floats
-    /// The original C code, the long comment, and the constants
-    /// below are from FreeBSD's /usr/src/lib/msun/src/e_log.c
-    /// and came with this notice. The go code is a simpler
-    /// version of the original C.
-    ///
-    /// ====================================================
-    /// Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
-    ///
-    /// Developed at SunPro, a Sun Microsystems, Inc. business.
-    /// Permission to use, copy, modify, and distribute this
-    /// software is freely granted, provided that this notice
-    /// is preserved.
-    /// ====================================================
-    ///
-    /// __ieee754_log(x)
-    /// Return the logarithm of x
-    ///
-    /// Method :
-    ///   1. Argument Reduction: find k and f such that
-    ///			x = 2**k * (1+f),
-    ///	   where  sqrt(2)/2 < 1+f < sqrt(2) .
-    ///
-    ///   2. Approximation of log(1+f).
-    ///	Let s = f/(2+f) ; based on log(1+f) = log(1+s) - log(1-s)
-    ///		 = 2s + 2/3 s**3 + 2/5 s**5 + .....,
-    ///	     	 = 2s + s*R
-    ///      We use a special Reme algorithm on [0,0.1716] to generate
-    ///	a polynomial of degree 14 to approximate R.  The maximum error
-    ///	of this polynomial approximation is bounded by 2**-58.45. In
-    ///	other words,
-    ///		        2      4      6      8      10      12      14
-    ///	    R(z) ~ L1*s +L2*s +L3*s +L4*s +L5*s  +L6*s  +L7*s
-    ///	(the values of L1 to L7 are listed in the program) and
-    ///	    |      2          14          |     -58.45
-    ///	    | L1*s +...+L7*s    -  R(z) | <= 2
-    ///	    |                             |
-    ///	Note that 2s = f - s*f = f - hfsq + s*hfsq, where hfsq = f*f/2.
-    ///	In order to guarantee error in log below 1ulp, we compute log by
-    ///		log(1+f) = f - s*(f - R)		(if f is not too large)
-    ///		log(1+f) = f - (hfsq - s*(hfsq+R)).	(better accuracy)
-    ///
-    ///	3. Finally,  log(x) = k*Ln2 + log(1+f).
-    ///			    = k*Ln2_hi+(f-(hfsq-(s*(hfsq+R)+k*Ln2_lo)))
-    ///	   Here Ln2 is split into two floating point number:
-    ///			Ln2_hi + Ln2_lo,
-    ///	   where n*Ln2_hi is always exact for |n| < 2000.
-    ///
-    /// Special cases:
-    ///	log(x) is NaN with signal if x < 0 (including -INF) ;
-    ///	log(+INF) is +INF; log(0) is -INF with signal;
-    ///	log(NaN) is that NaN with no signal.
-    ///
-    /// Accuracy:
-    ///	according to an error analysis, the error is always less than
-    ///	1 ulp (unit in the last place).
-    ///
-    /// Constants:
-    /// The hexadecimal values are the intended ones for the following
-    /// constants. The decimal values may be used, provided that the
-    /// compiler will convert from decimal to binary accurately enough
-    /// to produce the hexadecimal values shown.
-    /// Frexp breaks f into a normalized fraction
-    /// and an integral power of two.
-    /// It returns frac and exp satisfying f == frac × 2**exp,
-    /// with the absolute value of frac in the interval [½, 1).
-    ///
-    /// Log returns the natural logarithm of x.
-    ///
-    /// Special cases are:
-    ///	Log(+Inf) = +Inf
-    ///	Log(0) = -Inf
-    ///	Log(x < 0) = NaN
-    pub fn log(&self) -> Option<SignedPreciseNumber> {
-        if self.eq(&ZERO_PREC) {
-            return None;
-        }
-
-        if self.eq(&ONE_PREC) {
-            return Some(SignedPreciseNumber {
-                value: ZERO_PREC.clone(),
-                is_negative: false,
-            });
-        }
-
-        let (f1_init, ki_init) = self.frexp()?;
-
-        let (f1, ki) = if f1_init.less_than(&SQRT2OVERTWO) {
-            let new_f1 = f1_init.checked_mul(&TWO_PREC)?;
-            let new_k1 = ki_init.checked_sub(1)?;
-            (new_f1, new_k1)
-        } else {
-            (f1_init, ki_init)
-        };
-
-        let f = f1.signed().checked_sub(&PreciseNumber::one().signed())?;
-
-        let s_divisor = PreciseNumber { value: two() }.signed().checked_add(&f)?;
-        let s = &f.checked_div(&s_divisor)?;
-        let s2 = s.checked_mul(s)?.value;
-        let s4 = s2.checked_mul(&s2)?;
-        // s2 * (L1 + s4*(L3+s4*(L5+s4*L7)))
-        let t1 = s2.checked_mul(&L1.checked_add(&s4.checked_mul(
-            &L3.checked_add(&s4.checked_mul(&L5.checked_add(&s4.checked_mul(&L7)?)?)?)?,
-        )?)?)?;
-
-        // s4 * (L2 + s4*(L4+s4*L6))
-        let t2 = s4.checked_mul(
-            &L2.checked_add(&s4.checked_mul(&L4.checked_add(&s4.checked_mul(&L6)?)?)?)?,
-        )?;
-
-        let r = t1.checked_add(&t2)?;
-        let hfsq = f
-            .checked_mul(&f)?
-            .checked_div(&PreciseNumber { value: two() }.signed())?;
-        let k = SignedPreciseNumber {
-            value: PreciseNumber::new(u128::try_from(ki.abs()).ok()?)?,
-            is_negative: ki < 0,
-        };
-
-        // k*Ln2Hi - ((hfsq - (s*(hfsq+R) + k*Ln2Lo)) - f)
-        let kl2hi = k
-            .checked_mul(&LN2HI.signed())?
-            .checked_div(&LN2HI_SCALE.signed())?;
-        let shfsqr = s.checked_mul(&hfsq.checked_add(&r.signed())?)?;
-        let kl2lo = k
-            .checked_mul(&LN2LO.signed())?
-            .checked_div(&LN2LO_SCALE.signed())?;
-
-        let shfsqr_kl2lo = shfsqr.checked_add(&kl2lo)?;
-        let hfsq_shfsqr_kl2lo = hfsq.checked_sub(&shfsqr_kl2lo)?;
-        let f_hfsq_shfsqr_kl2lo = hfsq_shfsqr_kl2lo.checked_sub(&f)?;
-
-        kl2hi.checked_sub(&f_hfsq_shfsqr_kl2lo)
-    }
-
-    /// Raises `self` to the power of `exp`, returning the result as a new `PreciseNumber`.
-    /// Returns `None` if the operation would overflow or if `self` is zero.
-    ///
-    /// b = pow/frac
-    /// y = a^b
-    /// ln (y) = bln (a)
-    /// y = e^(b ln (a))
-    pub fn pow(&self, exp: &Self) -> Option<Self> {
-        if self.eq(&ZERO_PREC) {
-            return Some(ZERO_PREC.clone());
-        }
-
-        let lg = self.log()?;
-        let x = exp.signed().checked_mul(&lg)?;
-        x.exp()
     }
 }
 
@@ -476,100 +291,148 @@ impl PreciseNumber {
 mod tests {
     use super::*;
 
+    fn max_numeric() -> UnsignedNumeric {
+        UnsignedNumeric {
+            value: InnerUint::MAX,
+        }
+    }
+
+    #[test]
+    fn test_zero_and_one() {
+        assert_eq!(UnsignedNumeric::zero().value, InnerUint::from(0));
+        assert_eq!(UnsignedNumeric::one().value, InnerUint::from(ONE));
+    }
+
+    #[test]
+    fn test_from_scaled_u128() {
+        let n = UnsignedNumeric::from_scaled_u128(42 * ONE);
+        assert_eq!(n.to_imprecise().unwrap(), 42);
+    }
+
+    #[test]
+    fn test_to_string_exact() {
+        let n = UnsignedNumeric::new(3).unwrap();
+        assert_eq!(n.to_string(), "3.000000000000000000");
+    }
+
+    #[test]
+    fn test_to_string_fractional() {
+        let mut n = UnsignedNumeric::new(3).unwrap();
+        n.value += InnerUint::from(250_000_000_000_000_000u128); // +0.25
+        assert_eq!(n.to_string(), "3.250000000000000000");
+    }
+
+    #[test]
+    fn test_checked_add() {
+        let a = UnsignedNumeric::new(1).unwrap();
+        let b = UnsignedNumeric::new(2).unwrap();
+        let sum = a.checked_add(&b).unwrap();
+        assert_eq!(sum.to_imprecise().unwrap(), 3);
+    }
+
+    #[test]
+    fn test_checked_sub_underflow() {
+        let a = UnsignedNumeric::new(1).unwrap();
+        let b = UnsignedNumeric::new(2).unwrap();
+        assert!(a.checked_sub(&b).is_none());
+    }
+
+    #[test]
+    fn test_checked_sub_valid() {
+        let a = UnsignedNumeric::new(3).unwrap();
+        let b = UnsignedNumeric::new(1).unwrap();
+        let result = a.checked_sub(&b).unwrap();
+        assert_eq!(result.to_imprecise().unwrap(), 2);
+    }
+
+    #[test]
+    fn test_checked_mul_simple() {
+        let a = UnsignedNumeric::new(2).unwrap();
+        let b = UnsignedNumeric::new(3).unwrap();
+        let product = a.checked_mul(&b).unwrap();
+        assert_eq!(product.to_imprecise().unwrap(), 6);
+    }
+
+    #[test]
+    fn test_checked_div_exact() {
+        let a = UnsignedNumeric::new(6).unwrap();
+        let b = UnsignedNumeric::new(2).unwrap();
+        let result = a.checked_div(&b).unwrap();
+        assert_eq!(result.to_imprecise().unwrap(), 3);
+    }
+
+    #[test]
+    fn test_checked_div_rounded() {
+        let a = UnsignedNumeric::new(1).unwrap();
+        let b = UnsignedNumeric::new(3).unwrap(); // 1 / 3
+
+        let result = a.checked_div(&b).unwrap();
+        let expected = UnsignedNumeric::from_scaled_u128(333_333_333_333_333_333); // ~0.333...
+
+        assert!(result.almost_eq(&expected, InnerUint::from(1_000_000)));
+    }
+
+    #[test]
+    fn test_unsigned_sub_positive() {
+        let a = UnsignedNumeric::new(7).unwrap();
+        let b = UnsignedNumeric::new(3).unwrap();
+        let (result, is_negative) = a.unsigned_sub(&b);
+        assert_eq!(result.to_imprecise().unwrap(), 4);
+        assert!(!is_negative);
+    }
+
+    #[test]
+    fn test_unsigned_sub_negative() {
+        let a = UnsignedNumeric::new(3).unwrap();
+        let b = UnsignedNumeric::new(7).unwrap();
+        let (result, is_negative) = a.unsigned_sub(&b);
+        assert_eq!(result.to_imprecise().unwrap(), 4);
+        assert!(is_negative);
+    }
+
+    #[test]
+    fn test_almost_eq_within_precision() {
+        let a = UnsignedNumeric::new(5).unwrap();
+        let mut b = a.clone();
+        b.value += InnerUint::from(10); // Very slight difference
+
+        assert!(a.almost_eq(&b, InnerUint::from(20)));
+        assert!(!a.almost_eq(&b, InnerUint::from(5)));
+    }
+
+    #[test]
+    fn test_comparisons() {
+        let a = UnsignedNumeric::new(1).unwrap();
+        let b = UnsignedNumeric::new(2).unwrap();
+        assert!(a.less_than(&b));
+        assert!(b.greater_than(&a));
+        assert!(a.less_than_or_equal(&b));
+        assert!(b.greater_than_or_equal(&a));
+        assert!(a.less_than_or_equal(&a));
+        assert!(a.greater_than_or_equal(&a));
+    }
+
+    #[test]
+    fn test_signed_conversion() {
+        let u = UnsignedNumeric::new(42).unwrap();
+        let s = u.signed();
+        assert_eq!(s.value, u);
+        assert!(!s.is_negative);
+    }
+
     #[test]
     fn test_serialization() {
-        let original = PreciseNumber::from_values(123, 456, 789);
+        let original = UnsignedNumeric::from_values(123, 456, 789);
         let bytes = original.to_bytes();
-        let recovered = PreciseNumber::from_bytes(&bytes);
+        let recovered = UnsignedNumeric::from_bytes(&bytes);
 
         assert_eq!(original, recovered);
     }
 
     #[test]
-    fn test_pow() {
-        let precision = InnerUint::from(5_000_000_000_000_u128); // correct to at least 12 decimal places
-        let test = PreciseNumber::new(8).unwrap();
-        let sqrt = test.pow(&HALF).unwrap();
-        let expected = PreciseNumber::new(28284271247461903)
-            .unwrap()
-            .checked_div(&PreciseNumber::new(10000000000000000).unwrap())
-            .unwrap();
-        assert!(sqrt.almost_eq(&expected, precision));
-
-        let test2 = PreciseNumber::new(55)
-            .unwrap()
-            .checked_div(&PreciseNumber::new(100).unwrap())
-            .unwrap();
-        let squared = test2.pow(&TWO_PREC).unwrap();
-        let expected = PreciseNumber::new(3025)
-            .unwrap()
-            .checked_div(&PreciseNumber::new(10000).unwrap())
-            .unwrap();
-        assert!(squared.almost_eq(&expected, precision));
-    }
-
-    #[test]
-    fn test_log() {
-        let precision = InnerUint::from(5_000_000_000_u128); // correct to at least 9 decimal places
-
-        let test = PreciseNumber::new(9).unwrap();
-        let log = test.log().unwrap().value;
-        let expected = PreciseNumber::new(21972245773362196)
-            .unwrap()
-            .checked_div(&PreciseNumber::new(10000000000000000).unwrap())
-            .unwrap();
-        assert!(log.almost_eq(&expected, precision));
-
-        let test2 = PreciseNumber::new(2).unwrap();
-        assert!(test2.log().unwrap().value.almost_eq(
-            &PreciseNumber::new(6931471805599453)
-                .unwrap()
-                .checked_div(&PreciseNumber::new(10000000000000000).unwrap())
-                .unwrap(),
-            precision
-        ));
-
-        let test3 = &PreciseNumber::new(12)
-            .unwrap()
-            .checked_div(&PreciseNumber::new(10).unwrap())
-            .unwrap();
-        assert!(test3.log().unwrap().value.almost_eq(
-            &PreciseNumber::new(1823215567939546)
-                .unwrap()
-                .checked_div(&PreciseNumber::new(10000000000000000).unwrap())
-                .unwrap(),
-            precision
-        ));
-
-        let test5 = &PreciseNumber::new(15)
-            .unwrap()
-            .checked_div(&PreciseNumber::new(10).unwrap())
-            .unwrap();
-        assert!(test5.log().unwrap().value.almost_eq(
-            &PreciseNumber::new(4054651081081644)
-                .unwrap()
-                .checked_div(&PreciseNumber::new(10000000000000000).unwrap())
-                .unwrap(),
-            precision
-        ));
-
-        let test6 = PreciseNumber::new(4)
-            .unwrap()
-            .checked_div(&PreciseNumber::new(1000000).unwrap())
-            .unwrap();
-        assert!(test6.log().unwrap().value.almost_eq(
-            &PreciseNumber::new(12429216196844383)
-                .unwrap()
-                .checked_div(&PreciseNumber::new(1000000000000000).unwrap())
-                .unwrap(),
-            precision
-        ));
-    }
-
-    #[test]
     fn test_floor() {
-        let whole_number = PreciseNumber::new(2).unwrap();
-        let mut decimal_number = PreciseNumber::new(2).unwrap();
+        let whole_number = UnsignedNumeric::new(2).unwrap();
+        let mut decimal_number = UnsignedNumeric::new(2).unwrap();
         decimal_number.value += InnerUint::from(1);
         let floor = decimal_number.floor().unwrap();
         let floor_again = floor.floor().unwrap();
@@ -579,12 +442,82 @@ mod tests {
 
     #[test]
     fn test_ceiling() {
-        let whole_number = PreciseNumber::new(2).unwrap();
-        let mut decimal_number = PreciseNumber::new(2).unwrap();
+        let whole_number = UnsignedNumeric::new(2).unwrap();
+        let mut decimal_number = UnsignedNumeric::new(2).unwrap();
         decimal_number.value -= InnerUint::from(1);
         let ceiling = decimal_number.ceiling().unwrap();
         let ceiling_again = ceiling.ceiling().unwrap();
         assert_eq!(whole_number.value, ceiling.value);
         assert_eq!(whole_number.value, ceiling_again.value);
+    }
+
+    #[test]
+    fn test_add_overflow() {
+        let a = max_numeric();
+        let b = UnsignedNumeric::one();
+        assert!(a.checked_add(&b).is_none(), "Expected overflow on add");
+    }
+
+    #[test]
+    fn test_mul_overflow() {
+        let a = max_numeric();
+        let b = UnsignedNumeric::new(2).unwrap(); // 2.0 in scaled form
+
+        let result = a.checked_mul(&b);
+        assert!(result.is_none(), "Expected overflow on multiply");
+    }
+
+    #[test]
+    fn test_mul_fallback_path() {
+        let a = UnsignedNumeric::new(1_000_000_000_000u128).unwrap(); // large-ish value
+        let b = UnsignedNumeric::new(2).unwrap();
+
+        let result = a.checked_mul(&b).unwrap();
+        assert_eq!(result.to_imprecise().unwrap(), 2_000_000_000_000);
+    }
+
+    #[test]
+    fn test_mul_large_by_large_overflow() {
+        let a = UnsignedNumeric {
+            value: InnerUint([0, 0, 1]), // 2^128
+        };
+        let b = a.clone(); // 2^128 * 2^128 = 2^256, definitely too large
+
+        let result = a.checked_mul(&b);
+        assert!(result.is_none(), "Expected overflow on large * large");
+    }
+
+    #[test]
+    fn test_div_by_zero() {
+        let a = UnsignedNumeric::new(42).unwrap();
+        let zero = UnsignedNumeric::zero();
+
+        assert!(a.checked_div(&zero).is_none(), "Expected div by zero to fail");
+    }
+
+    #[test]
+    fn test_floor_overflow_fallback() {
+        // floor() performs: value / ONE * ONE
+        // If value is MAX, this can overflow
+        let a = max_numeric();
+        let result = a.floor();
+        assert!(result.is_some(), "Should handle overflow in floor safely");
+    }
+
+    #[test]
+    fn test_ceiling_overflow() {
+        // ceiling() performs: (value + ONE - 1) / ONE * ONE
+        // Adding ONE - 1 to MAX will overflow
+        let a = max_numeric();
+        let result = a.ceiling();
+        assert!(result.is_none(), "Expected overflow in ceiling()");
+    }
+
+    #[test]
+    fn test_rounding_correction_addition_overflow() {
+        let a = max_numeric();
+        // This simulates rounding correction inside `checked_div`
+        let corrected = a.value.checked_add(UnsignedNumeric::rounding_correction());
+        assert!(corrected.is_none(), "Expected overflow in rounding correction");
     }
 }

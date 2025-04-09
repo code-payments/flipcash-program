@@ -14,7 +14,6 @@ construct_uint! {
 construct_uint! {
     pub struct U192(3);
 }
-
 construct_uint! {
     pub struct U128(2);
 }

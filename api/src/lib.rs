@@ -20,6 +20,7 @@ pub mod prelude {
     pub use crate::pda::*;
     pub use crate::cpis::*;
     pub use crate::utils::*;
+    pub use crate::math::*;
 
     #[cfg(not(target_os = "solana"))]
     pub use crate::sdk::*;

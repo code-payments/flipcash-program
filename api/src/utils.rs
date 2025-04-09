@@ -59,43 +59,62 @@ pub fn from_name(val: &[u8]) -> String {
 }
 
 /// Convert token amount to a UnsignedNumeric value (e.g., 10_000_000 with 6 decimals -> 10.0 UnsignedNumeric)
-pub fn to_numeric(amount: u64, decimal_places: u8) -> Option<UnsignedNumeric> {
-    assert!(decimal_places <= 18, "Decimal places too high");
+pub fn to_numeric(amount: u64, decimal_places: u8) -> Result<UnsignedNumeric, ProgramError> {
+    if decimal_places > 18 {
+        return Err(ProgramError::InvalidArgument);
+    }
 
-    let scale = 10u64.pow(decimal_places as u32);
-    let amount_scaled = UnsignedNumeric::new(amount.into())?;
-    let divisor = UnsignedNumeric::new(scale.into())?;
+    let scale = 10u64.checked_pow(decimal_places as u32)
+        .ok_or(ProgramError::InvalidArgument)?;
+
+    let amount_scaled = UnsignedNumeric::new(amount.into())
+        .ok_or(ProgramError::InvalidArgument)?;
+
+    let divisor = UnsignedNumeric::new(scale.into())
+        .ok_or(ProgramError::InvalidArgument)?;
 
     amount_scaled.checked_div(&divisor)
+        .ok_or(ProgramError::InvalidArgument)
 }
 
 /// Convert UnsignedNumeric into a token amount value (e.g., 10.0 UnsignedNumeric with 6 decimals -> 10_000_000)
-pub fn from_numeric(value: UnsignedNumeric, decimal_places: u8) -> Option<u64> {
-    assert!(decimal_places <= 18, "Decimal places too high");
+pub fn from_numeric(value: UnsignedNumeric, decimal_places: u8) -> Result<u64, ProgramError> {
+    if decimal_places > 18 {
+        return Err(ProgramError::InvalidArgument);
+    }
 
-    let scale = 10u64.pow(decimal_places as u32);
-    let multiplier = UnsignedNumeric::new(scale.into())?;
+    let scale = 10u64.checked_pow(decimal_places as u32)
+        .ok_or(ProgramError::InvalidArgument)?;
 
-    let scaled = value.checked_mul(&multiplier)?;
-    let imprecise = scaled.to_imprecise()?;
+    let multiplier = UnsignedNumeric::new(scale.into())
+        .ok_or(ProgramError::InvalidArgument)?;
 
-    u64::try_from(imprecise).ok()
+    let result = value.checked_mul(&multiplier)
+        .and_then(|r| r.to_imprecise())
+        .ok_or(ProgramError::InvalidArgument)?;
+
+    u64::try_from(result).map_err(|_| ProgramError::InvalidArgument)
 }
 
 /// Converts basis points (e.g. 123) into an UnsignedNumeric (e.g. 0.0123)
-pub fn from_basis_points(bps: u32) -> Option<UnsignedNumeric> {
-    let bps_numeric = UnsignedNumeric::new(bps as u128)?;
-    let divisor = UnsignedNumeric::new(10_000)?;
-    bps_numeric.checked_div(&divisor)
+pub fn from_basis_points(bps: u32) -> Result<UnsignedNumeric, ProgramError> {
+    let value = UnsignedNumeric::new(bps.into())
+        .ok_or(ProgramError::InvalidArgument)?;
+    let divisor = UnsignedNumeric::new(10_000)
+        .ok_or(ProgramError::InvalidArgument)?;
+    value.checked_div(&divisor).ok_or(ProgramError::InvalidArgument)
 }
 
 /// Converts an UnsignedNumeric (e.g. 0.0123) into basis points (e.g. 123)
-pub fn to_basis_points(numeric: &UnsignedNumeric) -> Option<u32> {
-    let multiplier = UnsignedNumeric::new(10_000)?; // scale to bps
-    let bps = numeric.checked_mul(&multiplier)?.to_imprecise()?;
-    u32::try_from(bps).ok()
-}
+pub fn to_basis_points(numeric: &UnsignedNumeric) -> Result<u32, ProgramError> {
+    let multiplier = UnsignedNumeric::new(10_000)
+        .ok_or(ProgramError::InvalidArgument)?;
+    let bps = numeric.checked_mul(&multiplier)
+        .and_then(|r| r.to_imprecise())
+        .ok_or(ProgramError::InvalidArgument)?;
 
+    u32::try_from(bps).map_err(|_| ProgramError::InvalidArgument)
+}
 
 #[cfg(test)]
 mod tests {

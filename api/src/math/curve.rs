@@ -1,4 +1,4 @@
-use super::precise_number::PreciseNumber;
+use super::unsigned::PreciseNumber;
 
 // Constants for the default curve that goes from $0.01 to $1_000_000 over 21_000_000 tokens
 pub const A: u128 = 11400_230149967394933471;
@@ -77,10 +77,64 @@ impl PreciseExponentialCurve {
     }
 }
 
+//#[repr(C)]
+//#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
+//pub struct RawExponentialCurve {
+//    a: [u8; 24],
+//    b: [u8; 24],
+//    c: [u8; 24],
+//}
+//
+//impl RawExponentialCurve {
+//    pub fn from_struct(parsed: ParsedExponentialCurve) -> Self {
+//        Self {
+//            a: parsed.a.to_bytes(),
+//            b: parsed.b.to_bytes(),
+//            c: parsed.c.to_bytes(),
+//        }
+//    }
+//
+//    pub fn to_struct(&self) -> Result<ParsedExponentialCurve, std::io::Error> {
+//        Ok(ParsedExponentialCurve {
+//            a: f64::from_le_bytes(self.a),
+//            b: f64::from_le_bytes(self.b),
+//            c: f64::from_le_bytes(self.c),
+//        })
+//    }
+//}
+
+
+//#[repr(C)]
+//#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
+//pub struct ExponentialCurve {
+//    pub a: [u8; 8],
+//    pub b: [u8; 8],
+//    pub c: [u8; 8],
+//}
+//
+//impl ExponentialCurve {
+//    pub fn from_struct(parsed: ParsedExponentialCurve) -> Self {
+//        Self {
+//            a: parsed.a.to_le_bytes(),
+//            b: parsed.b.to_le_bytes(),
+//            c: parsed.c.to_le_bytes(),
+//        }
+//    }
+//
+//    pub fn to_struct(&self) -> Result<ParsedExponentialCurve, std::io::Error> {
+//        Ok(ParsedExponentialCurve {
+//            a: f64::from_le_bytes(self.a),
+//            b: f64::from_le_bytes(self.b),
+//            c: f64::from_le_bytes(self.c),
+//        })
+//    }
+//}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::precise_number::PreciseNumber;
+    use crate::math::unsigned::PreciseNumber;
 
     fn assert_approx_eq(actual: &PreciseNumber, expected: &PreciseNumber, tolerance: u128) {
         let (diff, _) = actual.unsigned_sub(expected);

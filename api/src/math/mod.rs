@@ -1,9 +1,21 @@
+// required for clippy
+#![allow(clippy::assign_op_pattern)]
+#![allow(clippy::ptr_offset_with_cast)]
+#![allow(clippy::manual_range_contains)]
+#![allow(clippy::reversed_empty_ranges)]
+
+use uint::construct_uint;
+
+construct_uint! {
+    pub struct InnerUint(3);
+}
+
 pub mod consts;
-pub mod uint;
-pub mod precise_number;
+pub mod unsigned;
+pub mod signed;
 pub mod curve;
 
 pub use consts::*;
-pub use uint::*;
-pub use precise_number::*;
+pub use unsigned::*;
+pub use signed::*;
 pub use curve::*;

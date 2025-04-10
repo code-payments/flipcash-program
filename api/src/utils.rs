@@ -1,6 +1,7 @@
 use steel::*;
 use solana_program::msg;
-use crate::{consts::*, math::UnsignedNumeric};
+use crate::consts::*;
+use brine_fp::UnsignedNumeric;
 
 pub fn check_condition(condition: bool, message: &str) -> ProgramResult {
     if !condition {
@@ -119,7 +120,7 @@ pub fn to_basis_points(numeric: &UnsignedNumeric) -> Result<u32, ProgramError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::InnerUint;
+    use brine_fp::InnerUint;
 
     #[test]
     fn test_to_name() {
@@ -201,14 +202,10 @@ mod tests {
     #[test]
     fn test_decimal_overflow_rejected() {
         // decimal_places > 18 should panic
-        let result = std::panic::catch_unwind(|| {
-            to_numeric(1, 19)
-        });
+        let result = to_numeric(1, 19);
         assert!(result.is_err());
 
-        let result = std::panic::catch_unwind(|| {
-            from_numeric(UnsignedNumeric::new(1).unwrap(), 19)
-        });
+        let result = from_numeric(UnsignedNumeric::new(1).unwrap(), 19);
         assert!(result.is_err());
     }
 

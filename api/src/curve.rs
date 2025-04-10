@@ -1,5 +1,5 @@
 use steel::*;
-use crate::math::unsigned::UnsignedNumeric;
+use brine_fp::UnsignedNumeric;
 
 // Constants for the default curve that goes from $0.01 to $1_000_000 over 21_000_000 tokens
 pub const A: u128 = 11400_230149967394933471;
@@ -107,7 +107,7 @@ impl RawExponentialCurve {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::unsigned::UnsignedNumeric;
+    use brine_fp::UnsignedNumeric;
 
     fn assert_approx_eq(actual: &UnsignedNumeric, expected: &UnsignedNumeric, tolerance: u128) {
         let (diff, _) = actual.unsigned_sub(expected);

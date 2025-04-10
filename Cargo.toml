@@ -20,6 +20,7 @@ spl-token = { features = ["no-entrypoint"], version = "^4" }
 spl-associated-token-account = { features = ["no-entrypoint"], version = "^6" }
 steel = { git = "https://github.com/regolith-labs/steel", rev = "3f6b36b", features = ["spl"] }
 uint = "0.8"
+brine-fp = "0.1.0"
 
 # cli-specific
 clap = { version = "4.5", features = ["derive"] }

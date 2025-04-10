@@ -10,6 +10,7 @@ steel.workspace = true
 num_enum.workspace = true
 spl-token.workspace = true
 uint.workspace = true
+brine-fp.workspace = true
 
 [dev-dependencies]
 solana-sdk = "2.1.0"

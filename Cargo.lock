@@ -425,6 +425,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "brine-fp"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f639406538370da180fa4f99fd6a753bed98ac97399c88bb398aa21bd7362e"
+dependencies = [
+ "uint 0.9.5",
+]
+
+[[package]]
 name = "brotli"
 version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -943,13 +952,14 @@ dependencies = [
 name = "flipcash-api"
 version = "0.1.0"
 dependencies = [
+ "brine-fp",
  "bytemuck",
  "num_enum",
  "solana-program",
  "solana-sdk",
  "spl-token 4.0.2",
  "steel",
- "uint",
+ "uint 0.8.5",
 ]
 
 [[package]]
@@ -1154,6 +1164,12 @@ name = "hashbrown"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
+
+[[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hmac"
@@ -4113,6 +4129,18 @@ dependencies = [
  "byteorder",
  "crunchy",
  "rustc-hex",
+ "static_assertions",
+]
+
+[[package]]
+name = "uint"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76f64bba2c53b04fcab63c01a7d7427eadc821e3bc48c34dc9ba29c501164b52"
+dependencies = [
+ "byteorder",
+ "crunchy",
+ "hex",
  "static_assertions",
 ]
 

@@ -153,6 +153,10 @@ fn run_integration() {
     let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
     assert!(res.is_ok());
 
+    assert_eq!(get_ata_balance(&svm, &user_usdc_ata), mint_amt);
+    assert_eq!(get_ata_balance(&svm, &vault_b_pda), 0);
+
+    // BUY
     let buy_amount = as_token(2306, usdc_decimals);
     let buy_ix = build_buy_tokens_ix(
         user_pk,
@@ -172,6 +176,18 @@ fn run_integration() {
     let res = send_tx(&mut svm, tx);
     assert!(res.is_ok());
 
+    let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
+    let vault_a_balance = get_ata_balance(&svm, &vault_a_pda);
+    let vault_b_balance = get_ata_balance(&svm, &vault_b_pda);
+    let fee_mint_balance = get_ata_balance(&svm, &fee_mint_ata);
+    let user_usdc_after_buy = get_ata_balance(&svm, &user_usdc_ata);
+
+    assert!(user_mint_balance > 0, "User should have received some tokens");
+    assert!(vault_a_balance > 0, "Vault A should have been debited");
+    assert!(vault_b_balance > 0, "Vault B should have received funds");
+    assert!(fee_mint_balance > 0, "Fee in mint should have been collected");
+
+    // SELL
     let sell_amount = as_token(25, darksky_decimals);
     let sell_ix = build_sell_tokens_ix(
         user_pk,
@@ -191,5 +207,20 @@ fn run_integration() {
     let res = send_tx(&mut svm, tx);
     assert!(res.is_ok());
 
-    //assert!(false);
+    let user_usdc_after_sell = get_ata_balance(&svm, &user_usdc_ata);
+    let vault_a_after_sell = get_ata_balance(&svm, &vault_a_pda);
+    let fee_usdc_balance = get_ata_balance(&svm, &fee_usdc_ata);
+
+    assert!(
+        user_usdc_after_sell > user_usdc_after_buy,
+        "User should have received USDC from sale"
+    );
+    assert!(
+        vault_a_after_sell > vault_a_balance,
+        "Vault A should have received tokens back"
+    );
+    assert!(
+        fee_usdc_balance > 0,
+        "USDC fee account should have received fee"
+    );
 }

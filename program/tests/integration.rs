@@ -15,6 +15,7 @@ fn as_token(val: u64, decimals: u8) -> u64 {
 struct TestCurrency {
     creator: Pubkey,
     name: String,
+    symbol: String,
     seed: [u8; 32],
     max_supply: u64,
     decimal_places: u8,
@@ -51,6 +52,7 @@ fn run_integration() {
     let currency = TestCurrency {
         creator: create_keypair().pubkey(),
         name: "dark-sky".to_string(),
+        symbol: "DSKY".to_string(),
         seed: [0u8; 32],
         max_supply: from_numeric(max_supply.clone(), darksky_decimals).unwrap(),
         decimal_places: darksky_decimals,
@@ -64,6 +66,7 @@ fn run_integration() {
         payer_pk,
         currency.creator,
         currency.name.clone(),
+        currency.symbol.clone(),
         currency.seed,
         currency.max_supply,
         currency.decimal_places,

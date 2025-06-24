@@ -59,6 +59,20 @@ pub fn from_name(val: &[u8]) -> String {
     String::from_utf8(name_bytes).unwrap()
 }
 
+pub fn to_symbol(val: &str) -> [u8; MAX_SYMBOL_LEN] {
+    assert!(val.len() <= MAX_SYMBOL_LEN, "symbol too long");
+
+    let mut symbol_bytes = [0u8; MAX_SYMBOL_LEN];
+    symbol_bytes[..val.len()].copy_from_slice(val.as_bytes());
+    symbol_bytes
+}
+
+pub fn from_symbol(val: &[u8]) -> String {
+    let mut symbol_bytes = val.to_vec();
+    symbol_bytes.retain(|&x| x != 0);
+    String::from_utf8(symbol_bytes).unwrap()
+}
+
 /// Convert token amount to a UnsignedNumeric value (e.g., 10_000_000 with 6 decimals -> 10.0 UnsignedNumeric)
 pub fn to_numeric(amount: u64, decimal_places: u8) -> Result<UnsignedNumeric, ProgramError> {
     if decimal_places > 18 {
@@ -134,6 +148,20 @@ mod tests {
         let name_bytes = [84, 101, 115, 116, 78, 97, 109, 101, 0, 0];
         let name = from_name(&name_bytes);
         assert_eq!(name, "TestName");
+    }
+
+    #[test]
+    fn test_to_symbol() {
+        let symbol = "TST";
+        let symbol_bytes = to_symbol(symbol);
+        assert_eq!(symbol_bytes[..symbol.len()], *symbol.as_bytes());
+    }
+
+    #[test]
+    fn test_from_symbol() {
+        let symbol_bytes = [84, 83, 84, 0, 0, 0, 0, 0];
+        let symbol = from_symbol(&symbol_bytes);
+        assert_eq!(symbol, "TST");
     }
 
     #[test]

@@ -7,6 +7,8 @@ pub mod state;
 pub mod pda;
 pub mod cpis;
 pub mod utils;
+pub mod event;
+mod macros;
 
 #[cfg(not(target_os = "solana"))]
 pub mod sdk;

@@ -1,5 +1,3 @@
-#![cfg(not(target_os = "solana"))]
-
 use steel::*;
 use crate::prelude::*;
 
@@ -7,12 +5,14 @@ pub fn build_initialize_currency_ix(
     authority: Pubkey,
     creator: Pubkey,
     name: String,
+    symbol: String,
     seed: [u8; 32],
     max_supply: u64,
     decimal_places: u8,
 ) -> Instruction {
     let (mint_pda, mint_bump) = find_mint_pda(&authority, &name, &seed);
     let (currency_pda, currency_bump) = find_currency_pda(&mint_pda);
+    let (metadata_pda, _metadata_bump) = metadata_pda(&mint_pda);
 
     println!("mint_pda: {}, bump: {} (target)", mint_pda, mint_bump);
 
@@ -23,13 +23,16 @@ pub fn build_initialize_currency_ix(
             AccountMeta::new(creator, false),
             AccountMeta::new(mint_pda, false),
             AccountMeta::new(currency_pda, false),
+            AccountMeta::new(metadata_pda, false),
             AccountMeta::new_readonly(spl_token::id(), false),
+            AccountMeta::new_readonly(mpl_token_metadata::ID, false),
             AccountMeta::new_readonly(system_program::id(), false),
             AccountMeta::new_readonly(sysvar::rent::id(), false),
         ],
         data: InitializeCurrencyIx::from_struct(
             ParsedInitializeCurrencyIx {
                 name,
+                symbol,
                 seed,
                 max_supply,
                 decimal_places,

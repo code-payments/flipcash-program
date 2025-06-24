@@ -6,12 +6,21 @@ use super::print_tx;
 
 pub fn program_bytes() -> Vec<u8> {
     let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    so_path.push("../target/deploy/flipcash_program.so");
+    so_path.push("../target/deploy/flipcash.so");
+    std::fs::read(so_path).unwrap()
+}
+
+pub fn metadata_bytes() -> Vec<u8> {
+    // Fetch the metadata program bytes before running the test
+    // solana program dump --url mainnet-beta metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s metadata.so
+    let mut so_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    so_path.push("../target/deploy/metadata.so");
     std::fs::read(so_path).unwrap()
 }
 
 pub fn setup_svm() -> LiteSVM {
     let mut svm = LiteSVM::new();
+    svm.add_program(mpl_token_metadata::ID, &metadata_bytes());
     svm.add_program(flipcash_api::ID, &program_bytes());
     svm
 }

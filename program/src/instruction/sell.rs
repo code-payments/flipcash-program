@@ -126,7 +126,7 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         token_program_info,
         tokens_after_fee_raw,
         &[
-            FLIPCASH, b"vault",
+            TREASURY,
             pool_info.key.as_ref(),
             base_mint_info.key.as_ref()
         ],
@@ -141,7 +141,7 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
             token_program_info,
             fee_amount_raw,
             &[
-                FLIPCASH, b"vault",
+                TREASURY,
                 pool_info.key.as_ref(),
                 base_mint_info.key.as_ref()
             ],

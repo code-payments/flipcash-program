@@ -27,7 +27,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     check_signer(authority_info)?;
     check_mut(currency_info)?;
     check_mut(target_mint_info)?;
-    //check_readonly(target_vault_info)?;
     check_mut(pool_info)?;
     check_mut(target_vault_info)?;
     check_mut(base_vault_info)?;
@@ -40,6 +39,11 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
 
     base_mint_info.as_mint()?;
     target_mint_info.as_mint()?;
+
+    check_condition(
+        target_mint_info.key.ne(base_mint_info.key),
+        "Target and base mints must be different"
+    )?;
 
     check_condition(
         fee_target_info.data_len() > 0,
@@ -61,19 +65,19 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
 
     check_uninitialized_pda(
         pool_info,
-        &[ FLIPCASH, b"pool", currency_info.key.as_ref() ],
+        &[ POOL, currency_info.key.as_ref() ],
         &flipcash_api::id()
     )?;
 
     check_uninitialized_pda(
         target_vault_info,
-        &[ FLIPCASH, b"vault", pool_info.key.as_ref(), target_mint_info.key.as_ref() ],
+        &[ TREASURY, pool_info.key.as_ref(), target_mint_info.key.as_ref() ],
         &flipcash_api::id()
     )?;
 
     check_uninitialized_pda(
         base_vault_info,
-        &[ FLIPCASH, b"vault", pool_info.key.as_ref(), base_mint_info.key.as_ref() ],
+        &[ TREASURY, pool_info.key.as_ref(), base_mint_info.key.as_ref() ],
         &flipcash_api::id()
     )?;
 
@@ -107,7 +111,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         target_mint_info,
         target_vault_info,
         &[
-            FLIPCASH, b"vault", 
+            TREASURY,
             pool_info.key.as_ref(), 
             target_mint_info.key.as_ref(),
             &[args.vault_a_bump]
@@ -121,7 +125,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         base_mint_info,
         base_vault_info,
         &[
-            FLIPCASH, b"vault", 
+            TREASURY,
             pool_info.key.as_ref(), 
             base_mint_info.key.as_ref(),
             &[args.vault_b_bump]
@@ -140,7 +144,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         token_program_info, 
         args.supply,
         &[
-             FLIPCASH, b"mint", 
+             MINT,
              authority_info.key.as_ref(),
              currency.name.as_ref(), 
              currency.seed.as_ref(),
@@ -158,7 +162,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         authority_info,
         &flipcash_api::ID,
         &[
-            FLIPCASH, b"pool", 
+            POOL, 
             currency_info.key.as_ref()
         ],
         args.bump,

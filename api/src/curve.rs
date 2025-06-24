@@ -1,10 +1,6 @@
 use steel::*;
 use brine_fp::UnsignedNumeric;
-
-// Constants for the default curve that goes from $0.01 to $1_000_000 over 21_000_000 tokens
-pub const A: u128 = 11400_230149967394933471;
-pub const B: u128 = 0_000000877175273521;
-pub const C: u128 = 0_000000877175273521;
+use crate::consts::*;
 
 #[derive(Debug, Clone)]
 pub struct ExponentialCurve {
@@ -16,9 +12,9 @@ pub struct ExponentialCurve {
 impl ExponentialCurve {
     pub fn default() -> Self {
         Self {
-            a: UnsignedNumeric::from_scaled_u128(A),
-            b: UnsignedNumeric::from_scaled_u128(B),
-            c: UnsignedNumeric::from_scaled_u128(C),
+            a: UnsignedNumeric::from_scaled_u128(CURVE_A),
+            b: UnsignedNumeric::from_scaled_u128(CURVE_B),
+            c: UnsignedNumeric::from_scaled_u128(CURVE_C),
         }
     }
 
@@ -173,16 +169,16 @@ mod tests {
         println!("b = {}", b.to_string());
         println!("c = {}", c.to_string());
 
-        assert_approx_eq(&a, &UnsignedNumeric::from_scaled_u128(A), 0);
-        assert_approx_eq(&b, &UnsignedNumeric::from_scaled_u128(B), 0);
-        assert_approx_eq(&c, &UnsignedNumeric::from_scaled_u128(C), 0);
+        assert_approx_eq(&a, &UnsignedNumeric::from_scaled_u128(CURVE_A), 0);
+        assert_approx_eq(&b, &UnsignedNumeric::from_scaled_u128(CURVE_B), 0);
+        assert_approx_eq(&c, &UnsignedNumeric::from_scaled_u128(CURVE_C), 0);
     }
 
     #[test]
     fn generate_curve_table() {
-        let a = UnsignedNumeric::from_scaled_u128(A);
-        let b = UnsignedNumeric::from_scaled_u128(B);
-        let c = UnsignedNumeric::from_scaled_u128(C);
+        let a = UnsignedNumeric::from_scaled_u128(CURVE_A);
+        let b = UnsignedNumeric::from_scaled_u128(CURVE_B);
+        let c = UnsignedNumeric::from_scaled_u128(CURVE_C);
 
         let curve = ExponentialCurve {
             a: a.clone(),

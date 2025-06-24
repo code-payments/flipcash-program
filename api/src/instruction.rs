@@ -22,6 +22,7 @@ instruction!(InstructionType, SellTokensIx);
 #[derive(Debug)]
 pub struct ParsedInitializeCurrencyIx {
     pub name: String,
+    pub symbol: String,
     pub seed: [u8; 32],
     pub max_supply: u64,
     pub decimal_places: u8,
@@ -34,6 +35,7 @@ pub struct ParsedInitializeCurrencyIx {
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct InitializeCurrencyIx {
     pub name: [u8; MAX_NAME_LEN],
+    pub symbol: [u8; MAX_SYMBOL_LEN],
     pub seed: [u8; 32],
     pub max_supply: [u8; 8],
     pub decimal_places: u8,
@@ -46,8 +48,11 @@ pub struct InitializeCurrencyIx {
 impl InitializeCurrencyIx {
     pub fn from_struct(parsed: ParsedInitializeCurrencyIx) -> Self {
         let name = to_name(&parsed.name);
+        let symbol = to_symbol(&parsed.name);
+
         Self {
             name,
+            symbol,
             seed: parsed.seed,
             max_supply: parsed.max_supply.to_le_bytes(),
             decimal_places: parsed.decimal_places,
@@ -60,8 +65,12 @@ impl InitializeCurrencyIx {
 
     pub fn to_struct(&self) -> Result<ParsedInitializeCurrencyIx, std::io::Error> {
         let name = from_name(&self.name);
+        let symbol = from_symbol(&self.symbol);
+
         Ok(ParsedInitializeCurrencyIx {
             name,
+            symbol,
+
             seed: self.seed,
             max_supply: u64::from_le_bytes(self.max_supply),
             decimal_places: self.decimal_places,

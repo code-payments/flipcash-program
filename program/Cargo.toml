@@ -1,26 +1,31 @@
 [package]
 name = "flipcash-program"
-version = "0.1.0"
-edition = "2021"
+description.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords.workspace = true
+
+documentation = "https://docs.rs/flipcash-program"
 
 [lib]
 crate-type = ["cdylib", "lib"]
+name = "flipcash"
 
 [features]
-no-entrypoint = []
-no-idl = []
-no-log-ix-name = []
-cpi = ["no-entrypoint"]
 default = []
-test-sbf = []
 
 [dependencies]
-flipcash-api = { path = "../api", version = "0.1.0" }
+flipcash-api.workspace = true
 solana-program.workspace = true
 steel.workspace = true
 spl-token.workspace = true
 spl-associated-token-account.workspace = true
 bytemuck.workspace = true
+mpl-token-metadata.workspace = true
 
 # Fix for issues with `build-sbf` rustc being on `1.79-dev`
 bytemuck_derive=">=1.8.1, <1.9.0"

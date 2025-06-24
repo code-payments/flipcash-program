@@ -125,7 +125,7 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         token_program_info,
         tokens_after_fee_raw,
         &[
-            FLIPCASH, b"vault",
+            TREASURY,
             pool_info.key.as_ref(),
             target_mint_info.key.as_ref()
         ],
@@ -140,7 +140,7 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
             token_program_info,
             fee_amount_raw,
             &[
-                FLIPCASH, b"vault",
+                TREASURY,
                 pool_info.key.as_ref(),
                 target_mint_info.key.as_ref()
             ],

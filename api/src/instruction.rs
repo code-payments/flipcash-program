@@ -48,7 +48,7 @@ pub struct InitializeCurrencyIx {
 impl InitializeCurrencyIx {
     pub fn from_struct(parsed: ParsedInitializeCurrencyIx) -> Self {
         let name = to_name(&parsed.name);
-        let symbol = to_symbol(&parsed.name);
+        let symbol = to_symbol(&parsed.symbol);
 
         Self {
             name,

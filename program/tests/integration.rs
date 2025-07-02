@@ -33,6 +33,8 @@ struct TestPool {
 
 #[test]
 fn run_integration() {
+    // TODO: take fee only on sell: 1%, no fee on buy
+
     let mut svm = setup_svm();
 
     let payer = create_payer(&mut svm);
@@ -226,4 +228,5 @@ fn run_integration() {
         fee_usdc_balance > 0,
         "USDC fee account should have received fee"
     );
+
 }

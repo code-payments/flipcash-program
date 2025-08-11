@@ -28,7 +28,7 @@ endif
 validator:
 	solana-test-validator \
 	  --clone-upgradeable-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s \
-	  --bpf-program AR9ehDtGRnqWdCUy5Z2geTqP5VTQwMzQPfx7b7Dd1HDe target/deploy/flipcash.so \
+	  --bpf-program ccZLx5N31asHhCa7hFmvdC9EGYVam13L8WXPTjPEiJY target/deploy/flipcash.so \
 	  --url https://api.mainnet-beta.solana.com
 
 local: clean build validator

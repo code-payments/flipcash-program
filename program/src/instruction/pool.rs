@@ -127,12 +127,15 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
 
     solana_program::msg!("Minting tokens");
 
+    let max_supply = MAX_TOKEN_SUPPLY
+        .checked_mul(QUARKS_PER_TOKEN)
+        .ok_or(ProgramError::InvalidArgument)?;
     mint_to_signed_with_bump(
         target_mint_info, 
         target_vault_info, 
         target_mint_info, // mint_authority
         token_program_info, 
-        MAX_TOKEN_SUPPLY * QUARKS_PER_TOKEN,
+        max_supply,
         &[
              MINT,
              authority_info.key.as_ref(),
@@ -172,7 +175,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     pool.sell_fee = args.sell_fee;
     pool.purchase_cap = args.purchase_cap;
     pool.sale_cap = args.sale_cap;
-    pool.supply_from_bonding = 0;
     pool.bump = args.bump;
     pool.vault_a_bump = args.vault_a_bump;
     pool.vault_b_bump = args.vault_b_bump;

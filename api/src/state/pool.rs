@@ -19,8 +19,6 @@ pub struct LiquidityPool {
     // Config
     pub purchase_cap: u64,        // Maximum purchase amount (in base tokens, 0 is no limit)
     pub sale_cap: u64,            // Maximum sale amount (in target tokens, 0 is no limit)
-
-    // Fee percentages
     pub buy_fee: u16,             // Basis points (0.5% = 50)
     pub sell_fee: u16,            // Basis points (0.5% = 50)
 
@@ -30,7 +28,6 @@ pub struct LiquidityPool {
     pub vault_b_bump: u8,
 
     _padding: [u8; 1],
-    //_buffer: [u8; 256],         // Padding (future use)
 }
 
 state!(AccountType, LiquidityPool);

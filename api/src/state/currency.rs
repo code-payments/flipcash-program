@@ -17,7 +17,6 @@ pub struct CurrencyConfig {
     pub mint_bump: u8,                   // Mint bump seed
 
     _padding: [u8; 6],
-    //_buffer: [u8; 256],                // Padding (future use)
 }
 
 state!(AccountType, CurrencyConfig);

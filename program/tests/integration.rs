@@ -119,7 +119,6 @@ fn run_integration() {
     assert_eq!(account.sell_fee, pool.sell_fee);
     assert_eq!(account.purchase_cap, pool.purchase_cap);
     assert_eq!(account.sale_cap, pool.sale_cap);
-    assert_eq!(account.supply_from_bonding, 0);
     assert_eq!(account.bump, pool_bump);
     assert_eq!(account.vault_a_bump, vault_a_bump);
     assert_eq!(account.vault_b_bump, vault_b_bump);

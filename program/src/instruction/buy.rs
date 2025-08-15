@@ -72,7 +72,12 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
     let curve = ExponentialCurve::default();
-    let supply = to_numeric(pool.supply_from_bonding, mint_a_decimals)?;
+    let supply_from_bonding = MAX_TOKEN_SUPPLY
+        .checked_mul(QUARKS_PER_TOKEN)
+        .ok_or(ProgramError::InvalidArgument)?
+        .checked_sub(target_vault_info.as_token_account()?.amount())
+        .ok_or(ProgramError::InvalidArgument)?;
+    let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
     let in_amount = to_numeric(args.in_amount, mint_b_decimals)?;
     let fee_rate = from_basis_points(pool.buy_fee)?;
 
@@ -110,7 +115,7 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     solana_program::msg!("withdraw tokens");
 
     target_vault_info.as_token_account()?
-        .assert(|t| t.amount() > 0)?;
+        .assert(|t| t.amount() >= total_tokens_raw)?;
 
     transfer_signed_with_bump(
         target_vault_info,
@@ -141,17 +146,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
             pool.vault_a_bump,
         )?;
     }
-
-    pool.supply_from_bonding = pool
-        .supply_from_bonding
-        .checked_add(total_tokens_raw)
-        .ok_or(ProgramError::InvalidArgument)?;
-
-    solana_program::msg!("pool.supply_from_bonding: {}", pool.supply_from_bonding);
-
-    let display_supply = to_numeric(pool.supply_from_bonding, mint_a_decimals)?;
-    solana_program::msg!("pool.supply_from_bonding (display): {}", display_supply.to_string());
-
 
     Ok(())
 }

@@ -186,7 +186,6 @@ async fn main() -> Result<()> {
             println!("  Sell Fee: {} bps ({}%)", pool.sell_fee, pool.sell_fee as f64 / 100.0);
             println!("  Purchase Cap: {}", pool.purchase_cap);
             println!("  Sale Cap: {}", pool.sale_cap);
-            println!("  Supply from Bonding: {}", pool.supply_from_bonding);
         }
 
         Commands::Buy { mint, base_mint, amount } => {

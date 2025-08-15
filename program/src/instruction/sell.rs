@@ -73,7 +73,11 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
 
     let curve = ExponentialCurve::default();
 
-    let supply_value = pool.supply_from_bonding
+    let supply_value = MAX_TOKEN_SUPPLY
+        .checked_mul(QUARKS_PER_TOKEN)
+        .ok_or(ProgramError::InvalidArgument)?
+        .checked_sub(target_vault_info.as_token_account()?.amount())
+        .ok_or(ProgramError::InvalidArgument)?
         .checked_sub(args.in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
     let supply = to_numeric(supply_value, mint_a_decimals)?;
@@ -145,20 +149,6 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
             pool.vault_b_bump,
         )?;
     }
-
-    pool.supply_from_bonding = pool
-        .supply_from_bonding
-        .checked_sub(args.in_amount)
-        .ok_or(ProgramError::InvalidArgument)?;
-
-    solana_program::msg!("pool.supply_from_bonding: {}", pool.supply_from_bonding);
-
-    let display_supply = to_numeric(pool.supply_from_bonding, mint_a_decimals)?;
-
-    solana_program::msg!(
-        "pool.supply_from_bonding (display): {}",
-        display_supply.to_string()
-    );
 
     Ok(())
 }

@@ -24,9 +24,6 @@ pub struct LiquidityPool {
     pub purchase_cap: u64,        // Maximum purchase amount (in base tokens, 0 is no limit)
     pub sale_cap: u64,            // Maximum sale amount (in target tokens, 0 is no limit)
 
-    // Bonding curve parameters
-    pub supply_from_bonding: u64,
-
     // Bump seeds for PDAs
     pub bump: u8,
     pub vault_a_bump: u8,

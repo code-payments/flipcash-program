@@ -9,10 +9,8 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
         authority_info,
         mint_info,
         currency_info,
-        metadata_info,
 
         token_program_info,
-        metadata_program_info,
         system_program_info,
         rent_sysvar_info,
     ] = accounts else {
@@ -27,16 +25,7 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
 
     check_program(token_program_info, &spl_token::id())?;
     check_program(system_program_info, &system_program::id())?;
-    check_program(metadata_program_info, &mpl_token_metadata::ID)?;
     check_sysvar(rent_sysvar_info, &sysvar::rent::id())?;
-
-    let (metadata_address, _metadata_bump) = metadata_pda(mint_info.key);
-
-    metadata_info
-        .is_empty()?
-        .is_writable()?
-        .has_address(&metadata_address)?;
-
 
     check_uninitialized_pda(
         mint_info,
@@ -72,44 +61,6 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
         system_program_info,
         rent_sysvar_info,
     )?;
-
-    // Point the url {} to the pubkey of the new mint
-    let uri = METADATA_URI.replace("{}", &mint_info.key.to_string());
-
-    // Initialize mint metadata.
-    mpl_token_metadata::instructions::CreateMetadataAccountV3Cpi {
-        __program: metadata_program_info,
-        metadata: metadata_info,
-        mint: mint_info,
-        mint_authority: mint_info,
-        payer: authority_info,
-        update_authority: (authority_info, true),
-        system_program: system_program_info,
-        rent: Some(rent_sysvar_info),
-        __args: mpl_token_metadata::instructions::CreateMetadataAccountV3InstructionArgs {
-            data: mpl_token_metadata::types::DataV2 {
-                name: args.name,
-                symbol: args.symbol,
-                uri: uri.to_string(),
-                seller_fee_basis_points: 0,
-                creators: None,
-                collection: None,
-                uses: None,
-            },
-            is_mutable: true,
-            collection_details: None,
-        },
-    }
-    .invoke_signed(
-        &[&[
-             MINT, 
-             authority_info.key.as_ref(),
-             raw_args.name.as_ref(), 
-             args.seed.as_ref(),
-             &[args.mint_bump]
-        ]],
-    )?;
-
 
     // Create the currency account.
     create_program_account_with_bump::<CurrencyConfig>(

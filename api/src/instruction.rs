@@ -1,6 +1,8 @@
 use steel::*;
 use crate::prelude::*;
 
+// todo: Add instruction to upload metadata
+
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, TryFromPrimitive)]
 pub enum InstructionType {

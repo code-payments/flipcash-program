@@ -182,10 +182,10 @@ async fn main() -> Result<()> {
             println!("  Vault B: {}", pool.vault_b);
             println!("  Fees A: {}", pool.fees_a);
             println!("  Fees B: {}", pool.fees_b);
-            println!("  Buy Fee: {} bps ({}%)", pool.buy_fee, pool.buy_fee as f64 / 100.0);
-            println!("  Sell Fee: {} bps ({}%)", pool.sell_fee, pool.sell_fee as f64 / 100.0);
             println!("  Purchase Cap: {}", pool.purchase_cap);
             println!("  Sale Cap: {}", pool.sale_cap);
+            println!("  Buy Fee: {} bps ({}%)", pool.buy_fee, pool.buy_fee as f64 / 100.0);
+            println!("  Sell Fee: {} bps ({}%)", pool.sell_fee, pool.sell_fee as f64 / 100.0);
         }
 
         Commands::Buy { mint, base_mint, amount } => {

@@ -112,7 +112,7 @@ pub fn from_numeric(value: UnsignedNumeric, decimal_places: u8) -> Result<u64, P
 }
 
 /// Converts basis points (e.g. 123) into an UnsignedNumeric (e.g. 0.0123)
-pub fn from_basis_points(bps: u32) -> Result<UnsignedNumeric, ProgramError> {
+pub fn from_basis_points(bps: u16) -> Result<UnsignedNumeric, ProgramError> {
     let value = UnsignedNumeric::new(bps.into())
         .ok_or(ProgramError::InvalidArgument)?;
     let divisor = UnsignedNumeric::new(10_000)
@@ -121,14 +121,14 @@ pub fn from_basis_points(bps: u32) -> Result<UnsignedNumeric, ProgramError> {
 }
 
 /// Converts an UnsignedNumeric (e.g. 0.0123) into basis points (e.g. 123)
-pub fn to_basis_points(numeric: &UnsignedNumeric) -> Result<u32, ProgramError> {
+pub fn to_basis_points(numeric: &UnsignedNumeric) -> Result<u16, ProgramError> {
     let multiplier = UnsignedNumeric::new(10_000)
         .ok_or(ProgramError::InvalidArgument)?;
     let bps = numeric.checked_mul(&multiplier)
         .and_then(|r| r.to_imprecise())
         .ok_or(ProgramError::InvalidArgument)?;
 
-    u32::try_from(bps).map_err(|_| ProgramError::InvalidArgument)
+    u16::try_from(bps).map_err(|_| ProgramError::InvalidArgument)
 }
 
 #[cfg(test)]

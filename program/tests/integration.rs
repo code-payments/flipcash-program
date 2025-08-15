@@ -20,8 +20,8 @@ struct TestCurrency {
 struct TestPool {
     purchase_cap: u64,
     sale_cap: u64,
-    buy_fee: u32,
-    sell_fee: u32,
+    buy_fee: u16,
+    sell_fee: u16,
 }
 
 #[test]

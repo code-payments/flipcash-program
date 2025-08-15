@@ -45,8 +45,8 @@ pub fn build_initialize_pool_ix(
 
     purchase_cap: u64,
     sale_cap: u64,
-    buy_fee: u32,
-    sell_fee: u32,
+    buy_fee: u16,
+    sell_fee: u16,
 
     fee_target : Pubkey,
     fee_base: Pubkey,

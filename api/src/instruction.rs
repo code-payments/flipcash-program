@@ -76,8 +76,8 @@ impl InitializeCurrencyIx {
 pub struct ParsedInitializePoolIx {
     pub purchase_cap: u64,
     pub sale_cap: u64,
-    pub buy_fee: u32,
-    pub sell_fee: u32,
+    pub buy_fee: u16,
+    pub sell_fee: u16,
 
     pub bump: u8,
     pub vault_a_bump: u8,
@@ -89,13 +89,13 @@ pub struct ParsedInitializePoolIx {
 pub struct InitializePoolIx {
     pub purchase_cap: [u8; 8],
     pub sale_cap: [u8; 8],
-    pub buy_fee: [u8; 4],
-    pub sell_fee: [u8; 4],
+    pub buy_fee: [u8; 2],
+    pub sell_fee: [u8; 2],
 
     pub bump: u8,
     pub vault_a_bump: u8,
     pub vault_b_bump: u8,
-    _padding: [u8; 5],
+    _padding: [u8; 1],
 }
 
 impl InitializePoolIx {
@@ -109,7 +109,7 @@ impl InitializePoolIx {
             bump: parsed.bump,
             vault_a_bump: parsed.vault_a_bump,
             vault_b_bump: parsed.vault_b_bump,
-            _padding: [0; 5],
+            _padding: [0; 1],
         }
     }
 
@@ -117,8 +117,8 @@ impl InitializePoolIx {
         Ok(ParsedInitializePoolIx {
             purchase_cap: u64::from_le_bytes(self.purchase_cap),
             sale_cap: u64::from_le_bytes(self.sale_cap),
-            buy_fee: u32::from_le_bytes(self.buy_fee),
-            sell_fee: u32::from_le_bytes(self.sell_fee),
+            buy_fee: u16::from_le_bytes(self.buy_fee),
+            sell_fee: u16::from_le_bytes(self.sell_fee),
 
             bump: self.bump,
             vault_a_bump: self.vault_a_bump,

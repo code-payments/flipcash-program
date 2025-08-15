@@ -168,7 +168,6 @@ async fn main() -> Result<()> {
             let symbol = from_symbol(&currency.symbol);
             println!("Currency Metadata:");
             println!("  Authority: {}", currency.authority);
-            println!("  Creator: {}", currency.creator);
             println!("  Mint: {}", currency.mint);
             println!("  Name: {}", name);
             println!("  Symbol: {}", symbol);

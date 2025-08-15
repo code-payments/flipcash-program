@@ -7,7 +7,6 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
 
     let [
         authority_info,
-        creator_info,
         mint_info,
         currency_info,
         metadata_info,
@@ -128,7 +127,6 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
     let currency = currency_info.as_account_mut::<CurrencyConfig>(&flipcash_api::ID)?;
 
     currency.authority = *authority_info.key;
-    currency.creator = *creator_info.key;
     currency.mint = *mint_info.key;
     currency.name = raw_args.name;
     currency.symbol = raw_args.symbol;

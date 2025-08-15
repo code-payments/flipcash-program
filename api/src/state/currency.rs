@@ -7,7 +7,6 @@ use crate::consts::*;
 #[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
 pub struct CurrencyConfig {
     pub authority: Pubkey,              // Can set fees, etc.
-    pub creator: Pubkey,                // Creator of the target mint and pool
     pub mint: Pubkey,                   // SPL Mint A (target)
     pub name: [u8; MAX_NAME_LEN],       // Currency name (target)
     pub symbol: [u8; MAX_SYMBOL_LEN],   // Currency symbol (target)

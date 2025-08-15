@@ -36,7 +36,6 @@ pub async fn initialize(
     let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(250_000);
     let create_currency_ix = build_initialize_currency_ix(
         authority,
-        authority, // Creator is same as authority
         name,
         symbol,
         seed,

@@ -3,7 +3,6 @@ use crate::prelude::*;
 
 pub fn build_initialize_currency_ix(
     authority: Pubkey,
-    creator: Pubkey,
     name: String,
     symbol: String,
     seed: [u8; 32],
@@ -20,7 +19,6 @@ pub fn build_initialize_currency_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(authority, true),
-            AccountMeta::new(creator, false),
             AccountMeta::new(mint_pda, false),
             AccountMeta::new(currency_pda, false),
             AccountMeta::new(metadata_pda, false),

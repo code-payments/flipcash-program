@@ -13,7 +13,6 @@ fn as_token(val: u64, decimals: u8) -> u64 {
 }
 
 struct TestCurrency {
-    creator: Pubkey,
     name: String,
     symbol: String,
     seed: [u8; 32],
@@ -52,7 +51,6 @@ fn run_integration() {
     let sell_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
 
     let currency = TestCurrency {
-        creator: create_keypair().pubkey(),
         name: "dark-sky".to_string(),
         symbol: "DSKY".to_string(),
         seed: [0u8; 32],
@@ -66,7 +64,6 @@ fn run_integration() {
     let blockhash = svm.latest_blockhash();
     let ix = build_initialize_currency_ix(
         payer_pk,
-        currency.creator,
         currency.name.clone(),
         currency.symbol.clone(),
         currency.seed,
@@ -81,7 +78,6 @@ fn run_integration() {
     let account = CurrencyConfig::unpack(&account.data).unwrap();
 
     assert_eq!(account.authority, payer_pk);
-    assert_eq!(account.creator, currency.creator);
     assert_eq!(account.mint, mint_pda);
     assert_eq!(account.name, to_name(&currency.name));
     assert_eq!(account.seed, currency.seed);

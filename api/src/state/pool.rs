@@ -1,7 +1,6 @@
 use steel::*;
 use super::AccountType;
 use crate::state;
-use crate::curve::*;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
@@ -26,7 +25,6 @@ pub struct LiquidityPool {
     pub sale_cap: u64,            // Maximum sale amount (in target tokens, 0 is no limit)
 
     // Bonding curve parameters
-    pub curve: RawExponentialCurve,
     pub supply_from_bonding: u64,
 
     // Bump seeds for PDAs

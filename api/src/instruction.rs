@@ -1,6 +1,5 @@
 use steel::*;
 use crate::prelude::*;
-use crate::curve::{ExponentialCurve, RawExponentialCurve};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, TryFromPrimitive)]
@@ -75,7 +74,6 @@ impl InitializeCurrencyIx {
 
 #[derive(Debug)]
 pub struct ParsedInitializePoolIx {
-    pub curve: ExponentialCurve,
     pub purchase_cap: u64,
     pub sale_cap: u64,
     pub buy_fee: u32,
@@ -89,7 +87,6 @@ pub struct ParsedInitializePoolIx {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct InitializePoolIx {
-    pub curve: RawExponentialCurve,
     pub purchase_cap: [u8; 8],
     pub sale_cap: [u8; 8],
     pub buy_fee: [u8; 4],
@@ -104,7 +101,6 @@ pub struct InitializePoolIx {
 impl InitializePoolIx {
     pub fn from_struct(parsed: ParsedInitializePoolIx) -> Self {
         Self {
-            curve: RawExponentialCurve::from_struct(parsed.curve),
             purchase_cap: parsed.purchase_cap.to_le_bytes(),
             sale_cap: parsed.sale_cap.to_le_bytes(),
             buy_fee: parsed.buy_fee.to_le_bytes(),
@@ -119,7 +115,6 @@ impl InitializePoolIx {
 
     pub fn to_struct(&self) -> Result<ParsedInitializePoolIx, std::io::Error> {
         Ok(ParsedInitializePoolIx {
-            curve: self.curve.to_struct()?,
             purchase_cap: u64::from_le_bytes(self.purchase_cap),
             sale_cap: u64::from_le_bytes(self.sale_cap),
             buy_fee: u32::from_le_bytes(self.buy_fee),

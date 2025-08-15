@@ -71,7 +71,7 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
-    let curve = pool.curve.to_struct()?;
+    let curve = ExponentialCurve::default();
 
     let supply_value = pool.supply_from_bonding
         .checked_sub(args.in_amount)

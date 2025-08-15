@@ -71,7 +71,7 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
-    let curve = pool.curve.to_struct()?;
+    let curve = ExponentialCurve::default();
     let supply = to_numeric(pool.supply_from_bonding, mint_a_decimals)?;
     let in_amount = to_numeric(args.in_amount, mint_b_decimals)?;
     let fee_rate = from_basis_points(pool.buy_fee)?;

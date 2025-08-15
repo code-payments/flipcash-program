@@ -172,7 +172,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     pool.sell_fee = args.sell_fee;
     pool.purchase_cap = args.purchase_cap;
     pool.sale_cap = args.sale_cap;
-    pool.curve = raw_args.curve;
     pool.supply_from_bonding = 0;
     pool.bump = args.bump;
     pool.vault_a_bump = args.vault_a_bump;

@@ -80,7 +80,6 @@ pub async fn initialize(
         currency_pda,
         mint_pda,
         base_mint,
-        ExponentialCurve::default(),
         PURCHASE_CAP,
         SALE_CAP,
         BUY_FEE_BPS,

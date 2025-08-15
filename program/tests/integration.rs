@@ -18,7 +18,6 @@ struct TestCurrency {
 }
 
 struct TestPool {
-    curve: ExponentialCurve,
     purchase_cap: u64,
     sale_cap: u64,
     buy_fee: u32,
@@ -75,7 +74,6 @@ fn run_integration() {
     assert_eq!(account.mint_bump, mint_bump);
 
     let pool = TestPool {
-        curve: ExponentialCurve::default(),
         purchase_cap: from_numeric(purchase_cap, usdc_decimals).unwrap(),
         sale_cap: from_numeric(sale_cap, darksky_decimals).unwrap(),
         buy_fee,
@@ -95,7 +93,6 @@ fn run_integration() {
         currency_pda,
         mint_pda,
         usdc,
-        pool.curve.clone(),
         pool.purchase_cap,
         pool.sale_cap,
         pool.buy_fee,
@@ -127,18 +124,21 @@ fn run_integration() {
     assert_eq!(account.vault_a_bump, vault_a_bump);
     assert_eq!(account.vault_b_bump, vault_b_bump);
 
+    assert_eq!(get_ata_balance(&svm, &vault_a_pda), as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS));
+    assert_eq!(get_ata_balance(&svm, &vault_b_pda), 0);
+
     let user = create_payer(&mut svm);
     let user_pk = user.pubkey();
 
-    let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
     let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
+    let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
 
     let mint_amt = as_token(5000, usdc_decimals);
     let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
     assert!(res.is_ok());
 
+    assert_eq!(get_ata_balance(&svm, &user_mint_ata), 0);
     assert_eq!(get_ata_balance(&svm, &user_usdc_ata), mint_amt);
-    assert_eq!(get_ata_balance(&svm, &vault_b_pda), 0);
 
     // BUY
     let buy_amount = as_token(2306, usdc_decimals);

@@ -43,7 +43,6 @@ pub fn build_initialize_pool_ix(
     target_mint: Pubkey,
     base_mint: Pubkey,    // Probably USDC
 
-    curve: ExponentialCurve,
     purchase_cap: u64,
     sale_cap: u64,
     buy_fee: u32,
@@ -79,11 +78,10 @@ pub fn build_initialize_pool_ix(
         ],
         data: InitializePoolIx::from_struct(
             ParsedInitializePoolIx {
-                buy_fee,
-                sell_fee,
-                curve,
                 purchase_cap,
                 sale_cap,
+                buy_fee,
+                sell_fee,
                 bump: pool_bump,
                 vault_a_bump,
                 vault_b_bump,

@@ -31,11 +31,10 @@ pub struct LiquidityPool {
 
     // Bump seeds for PDAs
     pub bump: u8,
-    pub currency_bump: u8,
     pub vault_a_bump: u8,
     pub vault_b_bump: u8,
 
-    _padding: [u8; 4],
+    _padding: [u8; 5],
     //_buffer: [u8; 256],         // Padding (future use)
 }
 

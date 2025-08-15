@@ -171,9 +171,6 @@ async fn main() -> Result<()> {
             println!("  Mint: {}", currency.mint);
             println!("  Name: {}", name);
             println!("  Symbol: {}", symbol);
-            println!("  Max Supply: {}", currency.max_supply);
-            println!("  Current Supply: {}", currency.current_supply);
-            println!("  Decimals: {}", currency.decimals_places);
 
             let (pool, _) = get_pool_account(&client, &pool_pda).await?;
             println!("\nPool Metadata:");

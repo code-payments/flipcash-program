@@ -6,8 +6,6 @@ pub fn build_initialize_currency_ix(
     name: String,
     symbol: String,
     seed: [u8; 32],
-    max_supply: u64,
-    decimal_places: u8,
 ) -> Instruction {
     let (mint_pda, mint_bump) = find_mint_pda(&authority, &name, &seed);
     let (currency_pda, currency_bump) = find_currency_pda(&mint_pda);
@@ -32,8 +30,6 @@ pub fn build_initialize_currency_ix(
                 name,
                 symbol,
                 seed,
-                max_supply,
-                decimal_places,
                 bump: currency_bump,
                 mint_bump,
             }
@@ -47,7 +43,6 @@ pub fn build_initialize_pool_ix(
     target_mint: Pubkey,
     base_mint: Pubkey,    // Probably USDC
 
-    supply: u64,
     curve: ExponentialCurve,
     purchase_cap: u64,
     sale_cap: u64,
@@ -86,7 +81,6 @@ pub fn build_initialize_pool_ix(
             ParsedInitializePoolIx {
                 buy_fee,
                 sell_fee,
-                supply,
                 curve,
                 purchase_cap,
                 sale_cap,

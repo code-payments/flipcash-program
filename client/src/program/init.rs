@@ -39,8 +39,6 @@ pub async fn initialize(
         name,
         symbol,
         seed,
-        MAX_SUPPLY,
-        DECIMAL_PLACES,
     );
 
     let blockhash_bytes = get_latest_blockhash(client).await?;
@@ -82,7 +80,6 @@ pub async fn initialize(
         currency_pda,
         mint_pda,
         base_mint,
-        MAX_SUPPLY,
         ExponentialCurve::default(),
         PURCHASE_CAP,
         SALE_CAP,

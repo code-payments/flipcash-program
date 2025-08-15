@@ -95,16 +95,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         "Currency mint does not match"
     )?;
 
-    check_condition(
-        currency.current_supply < currency.max_supply,
-        "Currency is already at max supply"
-    )?;
-
-    check_condition(
-        args.supply <= currency.max_supply - currency.current_supply,
-        "Requested supply exceeds max mint supply"
-    )?;
-
     solana_program::msg!("Creating vaults");
 
     create_token_account(
@@ -142,7 +132,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         target_vault_info, 
         target_mint_info, // mint_authority
         token_program_info, 
-        args.supply,
+        MAX_TOKEN_SUPPLY * QUARKS_PER_TOKEN,
         &[
              MINT,
              authority_info.key.as_ref(),
@@ -188,9 +178,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     pool.bump = args.bump;
     pool.vault_a_bump = args.vault_a_bump;
     pool.vault_b_bump = args.vault_b_bump;
-
-    // Update the current supply
-    currency.current_supply += args.supply;
 
     Ok(())
 }

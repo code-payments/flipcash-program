@@ -60,7 +60,7 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
         mint_info,
         mint_info.key,  // mint_authority
         None,           // freeze_authority
-        args.decimal_places,
+        TOKEN_DECIMALS,
         &[
              MINT, 
              authority_info.key.as_ref(),
@@ -131,9 +131,6 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
     currency.name = raw_args.name;
     currency.symbol = raw_args.symbol;
     currency.seed = args.seed;
-    currency.max_supply = args.max_supply;
-    currency.current_supply = 0;
-    currency.decimals_places = args.decimal_places;
     currency.bump = args.bump;
     currency.mint_bump = args.mint_bump;
 

@@ -16,12 +16,9 @@ struct TestCurrency {
     name: String,
     symbol: String,
     seed: [u8; 32],
-    max_supply: u64,
-    decimal_places: u8,
 }
 
 struct TestPool {
-    supply: u64,
     curve: ExponentialCurve,
     purchase_cap: u64,
     sale_cap: u64,
@@ -43,7 +40,6 @@ fn run_integration() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let max_supply = to_numeric(as_token(21_000_000, darksky_decimals), darksky_decimals).unwrap();
     let purchase_cap = to_numeric(as_token(5000, usdc_decimals), usdc_decimals).unwrap();
     let sale_cap = to_numeric(as_token(1000, darksky_decimals), darksky_decimals).unwrap();
     let buy_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
@@ -53,8 +49,6 @@ fn run_integration() {
         name: "dark-sky".to_string(),
         symbol: "DSKY".to_string(),
         seed: [0u8; 32],
-        max_supply: from_numeric(max_supply.clone(), darksky_decimals).unwrap(),
-        decimal_places: darksky_decimals,
     };
 
     let (mint_pda, mint_bump) = find_mint_pda(&payer_pk, &currency.name, &currency.seed);
@@ -66,8 +60,6 @@ fn run_integration() {
         currency.name.clone(),
         currency.symbol.clone(),
         currency.seed,
-        currency.max_supply,
-        currency.decimal_places,
     );
     let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
     let res = send_tx(&mut svm, tx);
@@ -80,14 +72,10 @@ fn run_integration() {
     assert_eq!(account.mint, mint_pda);
     assert_eq!(account.name, to_name(&currency.name));
     assert_eq!(account.seed, currency.seed);
-    assert_eq!(account.max_supply, currency.max_supply);
-    assert_eq!(account.current_supply, 0);
-    assert_eq!(account.decimals_places, currency.decimal_places);
     assert_eq!(account.bump, currency_bump);
     assert_eq!(account.mint_bump, mint_bump);
 
     let pool = TestPool {
-        supply: currency.max_supply,
         curve: ExponentialCurve::default(),
         purchase_cap: from_numeric(purchase_cap, usdc_decimals).unwrap(),
         sale_cap: from_numeric(sale_cap, darksky_decimals).unwrap(),
@@ -108,7 +96,6 @@ fn run_integration() {
         currency_pda,
         mint_pda,
         usdc,
-        pool.supply,
         pool.curve.clone(),
         pool.purchase_cap,
         pool.sale_cap,

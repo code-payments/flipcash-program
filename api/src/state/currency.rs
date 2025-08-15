@@ -12,16 +12,11 @@ pub struct CurrencyConfig {
     pub symbol: [u8; MAX_SYMBOL_LEN],   // Currency symbol (target)
     pub seed: [u8; 32],                 // Seed for PDA (target)
 
-    // Config
-    pub max_supply: u64,
-    pub current_supply: u64,
-    pub decimals_places: u8,
-
     // Bump seeds for PDAs
     pub bump: u8,
     pub mint_bump: u8,                   // Mint bump seed
 
-    _padding: [u8; 5],
+    _padding: [u8; 6],
     //_buffer: [u8; 256],                // Padding (future use)
 }
 

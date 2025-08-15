@@ -24,8 +24,6 @@ pub struct ParsedInitializeCurrencyIx {
     pub name: String,
     pub symbol: String,
     pub seed: [u8; 32],
-    pub max_supply: u64,
-    pub decimal_places: u8,
 
     pub bump: u8,
     pub mint_bump: u8,
@@ -37,12 +35,10 @@ pub struct InitializeCurrencyIx {
     pub name: [u8; MAX_NAME_LEN],
     pub symbol: [u8; MAX_SYMBOL_LEN],
     pub seed: [u8; 32],
-    pub max_supply: [u8; 8],
-    pub decimal_places: u8,
 
     pub bump: u8,
     pub mint_bump: u8,
-    _padding: [u8; 5],
+    _padding: [u8; 6],
 }
 
 impl InitializeCurrencyIx {
@@ -54,12 +50,10 @@ impl InitializeCurrencyIx {
             name,
             symbol,
             seed: parsed.seed,
-            max_supply: parsed.max_supply.to_le_bytes(),
-            decimal_places: parsed.decimal_places,
 
             bump: parsed.bump,
             mint_bump: parsed.mint_bump,
-            _padding: [0; 5],
+            _padding: [0; 6],
         }
     }
 
@@ -72,8 +66,6 @@ impl InitializeCurrencyIx {
             symbol,
 
             seed: self.seed,
-            max_supply: u64::from_le_bytes(self.max_supply),
-            decimal_places: self.decimal_places,
 
             bump: self.bump,
             mint_bump: self.mint_bump,
@@ -83,7 +75,6 @@ impl InitializeCurrencyIx {
 
 #[derive(Debug)]
 pub struct ParsedInitializePoolIx {
-    pub supply: u64, // Number of tokens to mint to the pool
     pub curve: ExponentialCurve,
     pub purchase_cap: u64,
     pub sale_cap: u64,
@@ -98,7 +89,6 @@ pub struct ParsedInitializePoolIx {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct InitializePoolIx {
-    pub supply: [u8; 8],
     pub curve: RawExponentialCurve,
     pub purchase_cap: [u8; 8],
     pub sale_cap: [u8; 8],
@@ -114,7 +104,6 @@ pub struct InitializePoolIx {
 impl InitializePoolIx {
     pub fn from_struct(parsed: ParsedInitializePoolIx) -> Self {
         Self {
-            supply: parsed.supply.to_le_bytes(),
             curve: RawExponentialCurve::from_struct(parsed.curve),
             purchase_cap: parsed.purchase_cap.to_le_bytes(),
             sale_cap: parsed.sale_cap.to_le_bytes(),
@@ -130,7 +119,6 @@ impl InitializePoolIx {
 
     pub fn to_struct(&self) -> Result<ParsedInitializePoolIx, std::io::Error> {
         Ok(ParsedInitializePoolIx {
-            supply: u64::from_le_bytes(self.supply),
             curve: self.curve.to_struct()?,
             purchase_cap: u64::from_le_bytes(self.purchase_cap),
             sale_cap: u64::from_le_bytes(self.sale_cap),

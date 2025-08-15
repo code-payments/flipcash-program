@@ -159,7 +159,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     )?;
 
     let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
-    let now = Clock::get()?.unix_timestamp;
 
     pool.authority = *authority_info.key;
     pool.currency = *currency_info.key;

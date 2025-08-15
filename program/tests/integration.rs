@@ -3,7 +3,6 @@
 pub mod utils;
 use utils::*;
 
-use steel::*;
 use flipcash_api::prelude::*;
 use solana_sdk::{signer::Signer, transaction::Transaction};
 

@@ -89,7 +89,6 @@ pub struct ParsedInitializePoolIx {
     pub sale_cap: u64,
     pub buy_fee: u32,
     pub sell_fee: u32,
-    pub go_live_wait_time: i64,
 
     pub bump: u8,
     pub vault_a_bump: u8,
@@ -105,7 +104,6 @@ pub struct InitializePoolIx {
     pub sale_cap: [u8; 8],
     pub buy_fee: [u8; 4],
     pub sell_fee: [u8; 4],
-    pub go_live_wait_time: [u8; 8],
 
     pub bump: u8,
     pub vault_a_bump: u8,
@@ -122,7 +120,6 @@ impl InitializePoolIx {
             sale_cap: parsed.sale_cap.to_le_bytes(),
             buy_fee: parsed.buy_fee.to_le_bytes(),
             sell_fee: parsed.sell_fee.to_le_bytes(),
-            go_live_wait_time: parsed.go_live_wait_time.to_le_bytes(),
 
             bump: parsed.bump,
             vault_a_bump: parsed.vault_a_bump,
@@ -139,7 +136,6 @@ impl InitializePoolIx {
             sale_cap: u64::from_le_bytes(self.sale_cap),
             buy_fee: u32::from_le_bytes(self.buy_fee),
             sell_fee: u32::from_le_bytes(self.sell_fee),
-            go_live_wait_time: i64::from_le_bytes(self.go_live_wait_time),
 
             bump: self.bump,
             vault_a_bump: self.vault_a_bump,

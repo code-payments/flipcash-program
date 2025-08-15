@@ -88,7 +88,6 @@ pub async fn initialize(
         SALE_CAP,
         BUY_FEE_BPS,
         SELL_FEE_BPS,
-        GO_LIVE_WAIT_TIME,
         fee_mint_ata,
         fee_base_ata,
     );

@@ -181,8 +181,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     pool.fees_b = *fee_base_info.key;
     pool.buy_fee = args.buy_fee;
     pool.sell_fee = args.sell_fee;
-    pool.created_unix_time = now;
-    pool.go_live_unix_time = now + args.go_live_wait_time;
     pool.purchase_cap = args.purchase_cap;
     pool.sale_cap = args.sale_cap;
     pool.curve = raw_args.curve;

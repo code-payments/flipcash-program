@@ -53,7 +53,6 @@ pub fn build_initialize_pool_ix(
     sale_cap: u64,
     buy_fee: u32,
     sell_fee: u32,
-    go_live_wait_time: i64,
 
     fee_target : Pubkey,
     fee_base: Pubkey,
@@ -89,7 +88,6 @@ pub fn build_initialize_pool_ix(
                 sell_fee,
                 supply,
                 curve,
-                go_live_wait_time,
                 purchase_cap,
                 sale_cap,
                 bump: pool_bump,

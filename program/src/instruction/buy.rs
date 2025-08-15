@@ -52,12 +52,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         "Fees account does not match"
     )?;
 
-    let now = Clock::get()?.unix_timestamp;
-
-    check_condition(
-        now >= pool.go_live_unix_time,
-        "Pool is not yet live"
-    )?;
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,
         "Invalid mint accounts"

@@ -22,8 +22,6 @@ pub struct LiquidityPool {
     pub sell_fee: u32,            // Basis points (0.5% = 50)
 
     // Config
-    pub created_unix_time: i64,
-    pub go_live_unix_time: i64,
     pub purchase_cap: u64,        // Maximum purchase amount (in base tokens, 0 is no limit)
     pub sale_cap: u64,            // Maximum sale amount (in target tokens, 0 is no limit)
 

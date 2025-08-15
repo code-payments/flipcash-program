@@ -23,7 +23,6 @@ struct TestCurrency {
 struct TestPool {
     supply: u64,
     curve: ExponentialCurve,
-    go_live_wait_time: i64,
     purchase_cap: u64,
     sale_cap: u64,
     buy_fee: u32,
@@ -90,7 +89,6 @@ fn run_integration() {
     let pool = TestPool {
         supply: currency.max_supply,
         curve: ExponentialCurve::default(),
-        go_live_wait_time: 0,
         purchase_cap: from_numeric(purchase_cap, usdc_decimals).unwrap(),
         sale_cap: from_numeric(sale_cap, darksky_decimals).unwrap(),
         buy_fee,
@@ -116,7 +114,6 @@ fn run_integration() {
         pool.sale_cap,
         pool.buy_fee,
         pool.sell_fee,
-        pool.go_live_wait_time,
         fee_mint_ata,
         fee_usdc_ata,
     );

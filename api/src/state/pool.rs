@@ -17,8 +17,6 @@ pub struct LiquidityPool {
     pub fees_b: Pubkey,           // Fees destination (base, probably USDC account)
 
     // Config
-    pub purchase_cap: u64,        // Maximum purchase amount (in base tokens, 0 is no limit)
-    pub sale_cap: u64,            // Maximum sale amount (in target tokens, 0 is no limit)
     pub buy_fee: u16,             // Basis points (0.5% = 50)
     pub sell_fee: u16,            // Basis points (0.5% = 50)
 

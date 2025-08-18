@@ -40,8 +40,6 @@ pub fn build_initialize_pool_ix(
     target_mint: Pubkey,
     base_mint: Pubkey,    // Probably USDC
 
-    purchase_cap: u64,
-    sale_cap: u64,
     buy_fee: u16,
     sell_fee: u16,
 
@@ -75,8 +73,6 @@ pub fn build_initialize_pool_ix(
         ],
         data: InitializePoolIx::from_struct(
             ParsedInitializePoolIx {
-                purchase_cap,
-                sale_cap,
                 buy_fee,
                 sell_fee,
                 bump: pool_bump,

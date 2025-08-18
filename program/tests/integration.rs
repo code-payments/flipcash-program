@@ -18,8 +18,6 @@ struct TestCurrency {
 }
 
 struct TestPool {
-    purchase_cap: u64,
-    sale_cap: u64,
     buy_fee: u16,
     sell_fee: u16,
 }
@@ -38,8 +36,6 @@ fn run_integration() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let purchase_cap = to_numeric(as_token(5000, usdc_decimals), usdc_decimals).unwrap();
-    let sale_cap = to_numeric(as_token(1000, darksky_decimals), darksky_decimals).unwrap();
     let buy_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
     let sell_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
 
@@ -74,8 +70,6 @@ fn run_integration() {
     assert_eq!(account.mint_bump, mint_bump);
 
     let pool = TestPool {
-        purchase_cap: from_numeric(purchase_cap, usdc_decimals).unwrap(),
-        sale_cap: from_numeric(sale_cap, darksky_decimals).unwrap(),
         buy_fee,
         sell_fee,
     };
@@ -93,8 +87,6 @@ fn run_integration() {
         currency_pda,
         mint_pda,
         usdc,
-        pool.purchase_cap,
-        pool.sale_cap,
         pool.buy_fee,
         pool.sell_fee,
         fee_mint_ata,
@@ -117,8 +109,6 @@ fn run_integration() {
     assert_eq!(account.fees_b, fee_usdc_ata);
     assert_eq!(account.buy_fee, pool.buy_fee);
     assert_eq!(account.sell_fee, pool.sell_fee);
-    assert_eq!(account.purchase_cap, pool.purchase_cap);
-    assert_eq!(account.sale_cap, pool.sale_cap);
     assert_eq!(account.bump, pool_bump);
     assert_eq!(account.vault_a_bump, vault_a_bump);
     assert_eq!(account.vault_b_bump, vault_b_bump);

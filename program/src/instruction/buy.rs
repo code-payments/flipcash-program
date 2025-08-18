@@ -61,13 +61,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         "Invalid vault accounts"
     )?;
 
-    if pool.purchase_cap > 0 {
-        check_condition(
-            args.in_amount <= pool.purchase_cap, 
-            "Purchase amount exceeds cap"
-        )?;
-    }
-
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 

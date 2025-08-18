@@ -80,8 +80,6 @@ pub async fn initialize(
         currency_pda,
         mint_pda,
         base_mint,
-        PURCHASE_CAP,
-        SALE_CAP,
         BUY_FEE_BPS,
         SELL_FEE_BPS,
         fee_mint_ata,

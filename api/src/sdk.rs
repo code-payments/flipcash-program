@@ -87,6 +87,33 @@ pub fn build_initialize_pool_ix(
     }
 }
 
+pub fn build_initialize_metadata_ix(
+    authority: Pubkey,
+    currency: Pubkey,
+    mint: Pubkey,
+    ) -> Instruction {
+
+    let (metadata_pda, metadata_bump) = metadata_pda(&mint);
+
+    println!("metadata_pda: {}, bump: {}", metadata_pda, metadata_bump);
+
+    Instruction {
+        program_id: crate::ID,
+        accounts: vec![
+            AccountMeta::new(authority, true),
+            AccountMeta::new_readonly(currency, false),
+            AccountMeta::new_readonly(mint, false),
+            AccountMeta::new(metadata_pda, false),
+            AccountMeta::new_readonly(system_program::id(), false),
+            AccountMeta::new_readonly(mpl_token_metadata::ID, false),
+            AccountMeta::new_readonly(sysvar::rent::id(), false),
+        ],
+        data: InitializeMetadataIx::from_struct(
+            ParsedInitializeMetadataIx {}
+        ).to_bytes(),
+    }
+}
+
 pub fn build_buy_tokens_ix(
     buyer: Pubkey,
     pool: Pubkey,

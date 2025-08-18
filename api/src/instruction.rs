@@ -1,8 +1,6 @@
 use steel::*;
 use crate::prelude::*;
 
-// todo: Add instruction to upload metadata
-
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, TryFromPrimitive)]
 pub enum InstructionType {
@@ -10,6 +8,7 @@ pub enum InstructionType {
 
     InitializeCurrencyIx,
     InitializePoolIx,
+    InitializeMetadataIx,
 
     BuyTokensIx,
     SellTokensIx,
@@ -17,6 +16,7 @@ pub enum InstructionType {
 
 instruction!(InstructionType, InitializeCurrencyIx);
 instruction!(InstructionType, InitializePoolIx);
+instruction!(InstructionType, InitializeMetadataIx);
 instruction!(InstructionType, BuyTokensIx);
 instruction!(InstructionType, SellTokensIx);
 
@@ -125,6 +125,27 @@ impl InitializePoolIx {
             bump: self.bump,
             vault_a_bump: self.vault_a_bump,
             vault_b_bump: self.vault_b_bump,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct ParsedInitializeMetadataIx {
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct InitializeMetadataIx {
+}
+
+impl InitializeMetadataIx {
+    pub fn from_struct(_parsed: ParsedInitializeMetadataIx) -> Self {
+        Self {
+        }
+    }
+
+    pub fn to_struct(&self) -> Result<ParsedInitializeMetadataIx, std::io::Error> {
+        Ok(ParsedInitializeMetadataIx {
         })
     }
 }

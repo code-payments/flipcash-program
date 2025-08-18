@@ -126,6 +126,16 @@ fn run_integration() {
     assert_eq!(get_ata_balance(&svm, &vault_a_pda), as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS));
     assert_eq!(get_ata_balance(&svm, &vault_b_pda), 0);
 
+    let blockhash = svm.latest_blockhash();
+    let ix = build_initialize_metadata_ix(
+        payer_pk,
+        currency_pda,
+        mint_pda,
+    );
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
+    let res = send_tx(&mut svm, tx);
+    assert!(res.is_ok());
+
     let user = create_payer(&mut svm);
     let user_pk = user.pubkey();
 

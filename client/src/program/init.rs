@@ -36,12 +36,9 @@ pub async fn initialize(
     let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(250_000);
     let create_currency_ix = build_initialize_currency_ix(
         authority,
-        authority, // Creator is same as authority
         name,
         symbol,
         seed,
-        MAX_SUPPLY,
-        DECIMAL_PLACES,
     );
 
     let blockhash_bytes = get_latest_blockhash(client).await?;
@@ -83,13 +80,8 @@ pub async fn initialize(
         currency_pda,
         mint_pda,
         base_mint,
-        MAX_SUPPLY,
-        ExponentialCurve::default(),
-        PURCHASE_CAP,
-        SALE_CAP,
         BUY_FEE_BPS,
         SELL_FEE_BPS,
-        GO_LIVE_WAIT_TIME,
         fee_mint_ata,
         fee_base_ata,
     );
@@ -97,16 +89,45 @@ pub async fn initialize(
     let blockhash_bytes = get_latest_blockhash(client).await?;
     let recent_blockhash = deserialize(&blockhash_bytes)?;
     let pool_tx = Transaction::new_signed_with_payer(
-        &[compute_budget_ix, pool_ix],
+        &[compute_budget_ix.clone(), pool_ix],
         Some(&authority),
         &[signer],
         recent_blockhash,
     );
 
+    println!("Initializing pool with PDA: {}", pool_pda);
+
     let pool_signature_bytes = send_and_confirm_transaction(client, &pool_tx)
         .await
         .map_err(|e| anyhow!("Failed to initialize pool: {}", e))?;
     let pool_signature: Signature = deserialize(&pool_signature_bytes)?;
+
+    println!("Pool initialized with signature: {}", pool_signature);
+
+    // Initialize metadata
+    let metadata_ix = build_initialize_metadata_ix(
+        authority,
+        currency_pda,
+        mint_pda,
+    );
+
+    let blockhash_bytes = get_latest_blockhash(client).await?;
+    let recent_blockhash = deserialize(&blockhash_bytes)?;
+    let metadata_tx = Transaction::new_signed_with_payer(
+        &[compute_budget_ix.clone(), metadata_ix],
+        Some(&authority),
+        &[signer],
+        recent_blockhash,
+    );
+
+    println!("Initializing metadata");
+
+    let metadata_signature_bytes = send_and_confirm_transaction(client, &metadata_tx)
+        .await
+        .map_err(|e| anyhow!("Failed to initialize metadata: {}", e))?;
+    let metadata_signature: Signature = deserialize(&metadata_signature_bytes)?;
+
+    println!("Metadata initialized with signature: {}", metadata_signature);
 
     Ok((currency_signature, pool_signature, mint_pda, currency_pda, pool_pda))
 }

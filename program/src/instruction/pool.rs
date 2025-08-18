@@ -95,16 +95,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         "Currency mint does not match"
     )?;
 
-    check_condition(
-        currency.current_supply < currency.max_supply,
-        "Currency is already at max supply"
-    )?;
-
-    check_condition(
-        args.supply <= currency.max_supply - currency.current_supply,
-        "Requested supply exceeds max mint supply"
-    )?;
-
     solana_program::msg!("Creating vaults");
 
     create_token_account(
@@ -137,12 +127,15 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
 
     solana_program::msg!("Minting tokens");
 
+    let max_supply = MAX_TOKEN_SUPPLY
+        .checked_mul(QUARKS_PER_TOKEN)
+        .ok_or(ProgramError::InvalidArgument)?;
     mint_to_signed_with_bump(
         target_mint_info, 
         target_vault_info, 
         target_mint_info, // mint_authority
         token_program_info, 
-        args.supply,
+        max_supply,
         &[
              MINT,
              authority_info.key.as_ref(),
@@ -169,7 +162,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     )?;
 
     let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
-    let now = Clock::get()?.unix_timestamp;
 
     pool.authority = *authority_info.key;
     pool.currency = *currency_info.key;
@@ -181,18 +173,9 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     pool.fees_b = *fee_base_info.key;
     pool.buy_fee = args.buy_fee;
     pool.sell_fee = args.sell_fee;
-    pool.created_unix_time = now;
-    pool.go_live_unix_time = now + args.go_live_wait_time;
-    pool.purchase_cap = args.purchase_cap;
-    pool.sale_cap = args.sale_cap;
-    pool.curve = raw_args.curve;
-    pool.supply_from_bonding = 0;
     pool.bump = args.bump;
     pool.vault_a_bump = args.vault_a_bump;
     pool.vault_b_bump = args.vault_b_bump;
-
-    // Update the current supply
-    currency.current_supply += args.supply;
 
     Ok(())
 }

@@ -168,13 +168,9 @@ async fn main() -> Result<()> {
             let symbol = from_symbol(&currency.symbol);
             println!("Currency Metadata:");
             println!("  Authority: {}", currency.authority);
-            println!("  Creator: {}", currency.creator);
             println!("  Mint: {}", currency.mint);
             println!("  Name: {}", name);
             println!("  Symbol: {}", symbol);
-            println!("  Max Supply: {}", currency.max_supply);
-            println!("  Current Supply: {}", currency.current_supply);
-            println!("  Decimals: {}", currency.decimals_places);
 
             let (pool, _) = get_pool_account(&client, &pool_pda).await?;
             println!("\nPool Metadata:");
@@ -188,11 +184,6 @@ async fn main() -> Result<()> {
             println!("  Fees B: {}", pool.fees_b);
             println!("  Buy Fee: {} bps ({}%)", pool.buy_fee, pool.buy_fee as f64 / 100.0);
             println!("  Sell Fee: {} bps ({}%)", pool.sell_fee, pool.sell_fee as f64 / 100.0);
-            println!("  Purchase Cap: {}", pool.purchase_cap);
-            println!("  Sale Cap: {}", pool.sale_cap);
-            println!("  Created Unix Time: {}", pool.created_unix_time);
-            println!("  Go Live Unix Time: {}", pool.go_live_unix_time);
-            println!("  Supply from Bonding: {}", pool.supply_from_bonding);
         }
 
         Commands::Buy { mint, base_mint, amount } => {

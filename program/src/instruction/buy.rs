@@ -52,12 +52,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         "Fees account does not match"
     )?;
 
-    let now = Clock::get()?.unix_timestamp;
-
-    check_condition(
-        now >= pool.go_live_unix_time,
-        "Pool is not yet live"
-    )?;
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,
         "Invalid mint accounts"
@@ -67,18 +61,16 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         "Invalid vault accounts"
     )?;
 
-    if pool.purchase_cap > 0 {
-        check_condition(
-            args.in_amount <= pool.purchase_cap, 
-            "Purchase amount exceeds cap"
-        )?;
-    }
-
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
-    let curve = pool.curve.to_struct()?;
-    let supply = to_numeric(pool.supply_from_bonding, mint_a_decimals)?;
+    let curve = ExponentialCurve::default();
+    let supply_from_bonding = MAX_TOKEN_SUPPLY
+        .checked_mul(QUARKS_PER_TOKEN)
+        .ok_or(ProgramError::InvalidArgument)?
+        .checked_sub(target_vault_info.as_token_account()?.amount())
+        .ok_or(ProgramError::InvalidArgument)?;
+    let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
     let in_amount = to_numeric(args.in_amount, mint_b_decimals)?;
     let fee_rate = from_basis_points(pool.buy_fee)?;
 
@@ -116,7 +108,7 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     solana_program::msg!("withdraw tokens");
 
     target_vault_info.as_token_account()?
-        .assert(|t| t.amount() > 0)?;
+        .assert(|t| t.amount() >= total_tokens_raw)?;
 
     transfer_signed_with_bump(
         target_vault_info,
@@ -147,17 +139,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
             pool.vault_a_bump,
         )?;
     }
-
-    pool.supply_from_bonding = pool
-        .supply_from_bonding
-        .checked_add(total_tokens_raw)
-        .ok_or(ProgramError::InvalidArgument)?;
-
-    solana_program::msg!("pool.supply_from_bonding: {}", pool.supply_from_bonding);
-
-    let display_supply = to_numeric(pool.supply_from_bonding, mint_a_decimals)?;
-    solana_program::msg!("pool.supply_from_bonding (display): {}", display_supply.to_string());
-
 
     Ok(())
 }

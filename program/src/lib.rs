@@ -17,6 +17,7 @@ pub fn process_instruction(
 
         InstructionType::InitializeCurrencyIx => process_initialize_currency(accounts, data)?,
         InstructionType::InitializePoolIx => process_initialize_pool(accounts, data)?,
+        InstructionType::InitializeMetadataIx => process_initialize_metadata(accounts, data)?,
         InstructionType::BuyTokensIx => process_buy_tokens(accounts, data)?,
         InstructionType::SellTokensIx => process_sell_tokens(accounts, data)?,
     }

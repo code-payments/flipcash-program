@@ -3,16 +3,12 @@ use crate::prelude::*;
 
 pub fn build_initialize_currency_ix(
     authority: Pubkey,
-    creator: Pubkey,
     name: String,
     symbol: String,
     seed: [u8; 32],
-    max_supply: u64,
-    decimal_places: u8,
 ) -> Instruction {
     let (mint_pda, mint_bump) = find_mint_pda(&authority, &name, &seed);
     let (currency_pda, currency_bump) = find_currency_pda(&mint_pda);
-    let (metadata_pda, _metadata_bump) = metadata_pda(&mint_pda);
 
     println!("mint_pda: {}, bump: {} (target)", mint_pda, mint_bump);
 
@@ -20,12 +16,9 @@ pub fn build_initialize_currency_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(authority, true),
-            AccountMeta::new(creator, false),
             AccountMeta::new(mint_pda, false),
             AccountMeta::new(currency_pda, false),
-            AccountMeta::new(metadata_pda, false),
             AccountMeta::new_readonly(spl_token::id(), false),
-            AccountMeta::new_readonly(mpl_token_metadata::ID, false),
             AccountMeta::new_readonly(system_program::id(), false),
             AccountMeta::new_readonly(sysvar::rent::id(), false),
         ],
@@ -34,8 +27,6 @@ pub fn build_initialize_currency_ix(
                 name,
                 symbol,
                 seed,
-                max_supply,
-                decimal_places,
                 bump: currency_bump,
                 mint_bump,
             }
@@ -49,13 +40,8 @@ pub fn build_initialize_pool_ix(
     target_mint: Pubkey,
     base_mint: Pubkey,    // Probably USDC
 
-    supply: u64,
-    curve: ExponentialCurve,
-    purchase_cap: u64,
-    sale_cap: u64,
-    buy_fee: u32,
-    sell_fee: u32,
-    go_live_wait_time: i64,
+    buy_fee: u16,
+    sell_fee: u16,
 
     fee_target : Pubkey,
     fee_base: Pubkey,
@@ -89,15 +75,37 @@ pub fn build_initialize_pool_ix(
             ParsedInitializePoolIx {
                 buy_fee,
                 sell_fee,
-                supply,
-                curve,
-                go_live_wait_time,
-                purchase_cap,
-                sale_cap,
                 bump: pool_bump,
                 vault_a_bump,
                 vault_b_bump,
             }
+        ).to_bytes(),
+    }
+}
+
+pub fn build_initialize_metadata_ix(
+    authority: Pubkey,
+    currency: Pubkey,
+    mint: Pubkey,
+    ) -> Instruction {
+
+    let (metadata_pda, metadata_bump) = metadata_pda(&mint);
+
+    println!("metadata_pda: {}, bump: {}", metadata_pda, metadata_bump);
+
+    Instruction {
+        program_id: crate::ID,
+        accounts: vec![
+            AccountMeta::new(authority, true),
+            AccountMeta::new_readonly(currency, false),
+            AccountMeta::new_readonly(mint, false),
+            AccountMeta::new(metadata_pda, false),
+            AccountMeta::new_readonly(system_program::id(), false),
+            AccountMeta::new_readonly(mpl_token_metadata::ID, false),
+            AccountMeta::new_readonly(sysvar::rent::id(), false),
+        ],
+        data: InitializeMetadataIx::from_struct(
+            ParsedInitializeMetadataIx {}
         ).to_bytes(),
     }
 }

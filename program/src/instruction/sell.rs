@@ -52,9 +52,6 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         "Royalties base account does not match"
     )?;
 
-    let now = Clock::get()?.unix_timestamp;
-
-    check_condition(now >= pool.go_live_unix_time, "Pool is not yet live")?;
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,
         "Invalid mint accounts"
@@ -64,19 +61,16 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         "Invalid vault accounts"
     )?;
 
-    if pool.sale_cap > 0 {
-        check_condition(
-            args.in_amount <= pool.sale_cap,
-            "Sale amount exceeds cap"
-        )?;
-    }
-
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
-    let curve = pool.curve.to_struct()?;
+    let curve = ExponentialCurve::default();
 
-    let supply_value = pool.supply_from_bonding
+    let supply_value = MAX_TOKEN_SUPPLY
+        .checked_mul(QUARKS_PER_TOKEN)
+        .ok_or(ProgramError::InvalidArgument)?
+        .checked_sub(target_vault_info.as_token_account()?.amount())
+        .ok_or(ProgramError::InvalidArgument)?
         .checked_sub(args.in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
     let supply = to_numeric(supply_value, mint_a_decimals)?;
@@ -148,20 +142,6 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
             pool.vault_b_bump,
         )?;
     }
-
-    pool.supply_from_bonding = pool
-        .supply_from_bonding
-        .checked_sub(args.in_amount)
-        .ok_or(ProgramError::InvalidArgument)?;
-
-    solana_program::msg!("pool.supply_from_bonding: {}", pool.supply_from_bonding);
-
-    let display_supply = to_numeric(pool.supply_from_bonding, mint_a_decimals)?;
-
-    solana_program::msg!(
-        "pool.supply_from_bonding (display): {}",
-        display_supply.to_string()
-    );
 
     Ok(())
 }

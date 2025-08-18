@@ -3,7 +3,6 @@
 pub mod utils;
 use utils::*;
 
-use steel::*;
 use flipcash_api::prelude::*;
 use solana_sdk::{signer::Signer, transaction::Transaction};
 
@@ -13,22 +12,14 @@ fn as_token(val: u64, decimals: u8) -> u64 {
 }
 
 struct TestCurrency {
-    creator: Pubkey,
     name: String,
     symbol: String,
     seed: [u8; 32],
-    max_supply: u64,
-    decimal_places: u8,
 }
 
 struct TestPool {
-    supply: u64,
-    curve: ExponentialCurve,
-    go_live_wait_time: i64,
-    purchase_cap: u64,
-    sale_cap: u64,
-    buy_fee: u32,
-    sell_fee: u32,
+    buy_fee: u16,
+    sell_fee: u16,
 }
 
 #[test]
@@ -45,19 +36,13 @@ fn run_integration() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let max_supply = to_numeric(as_token(21_000_000, darksky_decimals), darksky_decimals).unwrap();
-    let purchase_cap = to_numeric(as_token(5000, usdc_decimals), usdc_decimals).unwrap();
-    let sale_cap = to_numeric(as_token(1000, darksky_decimals), darksky_decimals).unwrap();
     let buy_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
     let sell_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
 
     let currency = TestCurrency {
-        creator: create_keypair().pubkey(),
         name: "dark-sky".to_string(),
         symbol: "DSKY".to_string(),
         seed: [0u8; 32],
-        max_supply: from_numeric(max_supply.clone(), darksky_decimals).unwrap(),
-        decimal_places: darksky_decimals,
     };
 
     let (mint_pda, mint_bump) = find_mint_pda(&payer_pk, &currency.name, &currency.seed);
@@ -66,12 +51,9 @@ fn run_integration() {
     let blockhash = svm.latest_blockhash();
     let ix = build_initialize_currency_ix(
         payer_pk,
-        currency.creator,
         currency.name.clone(),
         currency.symbol.clone(),
         currency.seed,
-        currency.max_supply,
-        currency.decimal_places,
     );
     let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
     let res = send_tx(&mut svm, tx);
@@ -81,22 +63,13 @@ fn run_integration() {
     let account = CurrencyConfig::unpack(&account.data).unwrap();
 
     assert_eq!(account.authority, payer_pk);
-    assert_eq!(account.creator, currency.creator);
     assert_eq!(account.mint, mint_pda);
     assert_eq!(account.name, to_name(&currency.name));
     assert_eq!(account.seed, currency.seed);
-    assert_eq!(account.max_supply, currency.max_supply);
-    assert_eq!(account.current_supply, 0);
-    assert_eq!(account.decimals_places, currency.decimal_places);
     assert_eq!(account.bump, currency_bump);
     assert_eq!(account.mint_bump, mint_bump);
 
     let pool = TestPool {
-        supply: currency.max_supply,
-        curve: ExponentialCurve::default(),
-        go_live_wait_time: 0,
-        purchase_cap: from_numeric(purchase_cap, usdc_decimals).unwrap(),
-        sale_cap: from_numeric(sale_cap, darksky_decimals).unwrap(),
         buy_fee,
         sell_fee,
     };
@@ -114,13 +87,8 @@ fn run_integration() {
         currency_pda,
         mint_pda,
         usdc,
-        pool.supply,
-        pool.curve.clone(),
-        pool.purchase_cap,
-        pool.sale_cap,
         pool.buy_fee,
         pool.sell_fee,
-        pool.go_live_wait_time,
         fee_mint_ata,
         fee_usdc_ata,
     );
@@ -141,25 +109,35 @@ fn run_integration() {
     assert_eq!(account.fees_b, fee_usdc_ata);
     assert_eq!(account.buy_fee, pool.buy_fee);
     assert_eq!(account.sell_fee, pool.sell_fee);
-    assert_eq!(account.purchase_cap, pool.purchase_cap);
-    assert_eq!(account.sale_cap, pool.sale_cap);
-    assert_eq!(account.supply_from_bonding, 0);
     assert_eq!(account.bump, pool_bump);
     assert_eq!(account.vault_a_bump, vault_a_bump);
     assert_eq!(account.vault_b_bump, vault_b_bump);
 
+    assert_eq!(get_ata_balance(&svm, &vault_a_pda), as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS));
+    assert_eq!(get_ata_balance(&svm, &vault_b_pda), 0);
+
+    let blockhash = svm.latest_blockhash();
+    let ix = build_initialize_metadata_ix(
+        payer_pk,
+        currency_pda,
+        mint_pda,
+    );
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
+    let res = send_tx(&mut svm, tx);
+    assert!(res.is_ok());
+
     let user = create_payer(&mut svm);
     let user_pk = user.pubkey();
 
-    let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
     let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
+    let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
 
     let mint_amt = as_token(5000, usdc_decimals);
     let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
     assert!(res.is_ok());
 
+    assert_eq!(get_ata_balance(&svm, &user_mint_ata), 0);
     assert_eq!(get_ata_balance(&svm, &user_usdc_ata), mint_amt);
-    assert_eq!(get_ata_balance(&svm, &vault_b_pda), 0);
 
     // BUY
     let buy_amount = as_token(2306, usdc_decimals);

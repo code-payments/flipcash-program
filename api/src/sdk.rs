@@ -100,8 +100,8 @@ pub fn build_initialize_metadata_ix(
             AccountMeta::new_readonly(currency, false),
             AccountMeta::new_readonly(mint, false),
             AccountMeta::new(metadata_pda, false),
-            AccountMeta::new_readonly(system_program::id(), false),
             AccountMeta::new_readonly(mpl_token_metadata::ID, false),
+            AccountMeta::new_readonly(system_program::id(), false),
             AccountMeta::new_readonly(sysvar::rent::id(), false),
         ],
         data: InitializeMetadataIx::from_struct(

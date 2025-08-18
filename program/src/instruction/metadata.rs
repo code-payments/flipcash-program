@@ -11,8 +11,8 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
         mint_info,
         metadata_info,
 
-        system_program_info,
         metadata_program_info,
+        system_program_info,
         rent_sysvar_info,
     ] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
@@ -23,8 +23,8 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
     check_signer(authority_info)?;
     check_mut(metadata_info)?;
 
-    check_program(system_program_info, &system_program::id())?;
     check_program(metadata_program_info, &mpl_token_metadata::ID)?;
+    check_program(system_program_info, &system_program::id())?;
     check_sysvar(rent_sysvar_info, &sysvar::rent::id())?;
 
     solana_program::msg!("Getting currency config");

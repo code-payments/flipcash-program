@@ -29,7 +29,7 @@ impl ExponentialCurve {
 
     /// Calculate total cost to buy `num_tokens` starting at `current_supply`
     /// “How much does it cost to get X tokens?”
-    pub fn tokens_to_value(
+    pub fn tokens_to_value_from_current_supply(
         &self,
         current_supply: &UnsignedNumeric,
         tokens: &UnsignedNumeric,
@@ -51,6 +51,26 @@ impl ExponentialCurve {
         exp_ns
             .checked_sub(&exp_cs)
             .and_then(|diff| ab_over_c.checked_mul(&diff))
+    }
+
+    /// Caluclate the value received when selling `num_tokens` starting at `current_value`.
+    /// “How much value can I get for X tokens?”
+    pub fn tokens_to_value_from_current_value(
+         &self,
+         current_value: &UnsignedNumeric,
+         tokens: &UnsignedNumeric,
+    ) -> Option<UnsignedNumeric> {
+        // value = (current_value + a) * (1 - e^(-c * tokens))
+
+        let numerator = self.a.checked_mul(&self.b)?;
+        let ab_over_c = numerator.checked_div(&self.c)?;
+        let cv_plus_ab_over_c = current_value.checked_add(&ab_over_c)?;
+
+        let c_times_tokens = self.c.checked_mul(tokens)?;
+        let exp = c_times_tokens.signed().negate().exp()?;
+        let one_minus_exp = UnsignedNumeric::one().checked_sub(&exp)?;
+
+        cv_plus_ab_over_c.checked_mul(&one_minus_exp)
     }
 
     /// Calculate number of tokens received for a price `value` starting at `current_supply`
@@ -195,7 +215,7 @@ mod tests {
         let mut supply = zero.clone();
 
         for i in 0..101 {
-            let cost = curve.tokens_to_value(&zero, &supply).unwrap();
+            let cost = curve.tokens_to_value_from_current_supply(&zero, &supply).unwrap();
             let spot_price = curve.spot_price_at_supply(&supply).unwrap();
 
             println!(

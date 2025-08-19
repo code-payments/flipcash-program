@@ -64,18 +64,24 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
-    let curve = ExponentialCurve::default();
+    let tokens_left_raw = target_vault_info.as_token_account()?.amount();
     let supply_from_bonding = MAX_TOKEN_SUPPLY
         .checked_mul(QUARKS_PER_TOKEN)
         .ok_or(ProgramError::InvalidArgument)?
-        .checked_sub(target_vault_info.as_token_account()?.amount())
+        .checked_sub(tokens_left_raw)
         .ok_or(ProgramError::InvalidArgument)?;
+
+    let curve = ExponentialCurve::default();
+    let tokens_left = to_numeric(tokens_left_raw, mint_a_decimals)?;
     let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
     let in_amount = to_numeric(args.in_amount, mint_b_decimals)?;
     let fee_rate = from_basis_points(pool.buy_fee)?;
 
-    let total_tokens = curve.value_to_tokens(&supply, &in_amount)
+    let mut total_tokens = curve.value_to_tokens(&supply, &in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
+    if tokens_left.less_than(&total_tokens) {
+        total_tokens = tokens_left
+    }
     let fee_amount = total_tokens.checked_mul(&fee_rate)
         .ok_or(ProgramError::InvalidArgument)?;
     let tokens_after_fee = total_tokens.checked_sub(&fee_amount)
@@ -86,7 +92,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     solana_program::msg!("fee: {}", fee_amount.to_string());
     solana_program::msg!("tokens_after_fee: {}", tokens_after_fee.to_string());
 
-    let total_tokens_raw = from_numeric(total_tokens.clone(), mint_a_decimals)?;
     let fee_amount_raw = from_numeric(fee_amount.clone(), mint_a_decimals)?;
     let tokens_after_fee_raw = from_numeric(tokens_after_fee.clone(), mint_a_decimals)?;
 
@@ -95,8 +100,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         "Slippage exceeded"
     )?;
 
-    solana_program::msg!("deposit tokens");
-
     transfer(
         buyer_info,
         buyer_base_ata_info,
@@ -104,11 +107,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         token_program_info,
         args.in_amount,
     )?;
-
-    solana_program::msg!("withdraw tokens");
-
-    target_vault_info.as_token_account()?
-        .assert(|t| t.amount() >= total_tokens_raw)?;
 
     transfer_signed_with_bump(
         target_vault_info,

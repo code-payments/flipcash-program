@@ -61,8 +61,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     fee_base_info.as_token_account()?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
-    solana_program::msg!("Checking PDAs");
-
     check_uninitialized_pda(
         pool_info,
         &[ POOL, currency_info.key.as_ref() ],
@@ -81,8 +79,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         &flipcash_api::id()
     )?;
 
-    solana_program::msg!("Getting currency config");
-
     let currency = currency_info.as_account_mut::<CurrencyConfig>(&flipcash_api::ID)?;
 
     check_condition(
@@ -94,8 +90,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         currency.mint.eq(target_mint_info.key),
         "Currency mint does not match"
     )?;
-
-    solana_program::msg!("Creating vaults");
 
     create_token_account(
         target_mint_info,
@@ -125,8 +119,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         rent_sysvar_info,
     )?;
 
-    solana_program::msg!("Minting tokens");
-
     let max_supply = MAX_TOKEN_SUPPLY
         .checked_mul(QUARKS_PER_TOKEN)
         .ok_or(ProgramError::InvalidArgument)?;
@@ -144,9 +136,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         ],
         currency.mint_bump
     )?;
-
-
-    solana_program::msg!("Creating pool");
 
     // Create the liquidity pool account.
     create_program_account_with_bump::<LiquidityPool>(

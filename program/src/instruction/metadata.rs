@@ -27,8 +27,6 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
     check_program(system_program_info, &system_program::id())?;
     check_sysvar(rent_sysvar_info, &sysvar::rent::id())?;
 
-    solana_program::msg!("Getting currency config");
-
     let currency = currency_info.as_account_mut::<CurrencyConfig>(&flipcash_api::ID)?;
 
     check_condition(
@@ -49,8 +47,6 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
         .has_address(&metadata_address)?;
 
     let uri = METADATA_URI.replace("{}", &mint_info.key.to_string());
-
-    solana_program::msg!("Creating metadata");
 
     // Initialize mint metadata.
     mpl_token_metadata::instructions::CreateMetadataAccountV3Cpi {

@@ -61,44 +61,38 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         "Invalid vault accounts"
     )?;
 
+    let value_left_raw = base_vault_info.as_token_account()?.amount();
+
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
     let curve = ExponentialCurve::default();
-
-    let supply_value = MAX_TOKEN_SUPPLY
-        .checked_mul(QUARKS_PER_TOKEN)
-        .ok_or(ProgramError::InvalidArgument)?
-        .checked_sub(target_vault_info.as_token_account()?.amount())
-        .ok_or(ProgramError::InvalidArgument)?
-        .checked_sub(args.in_amount)
-        .ok_or(ProgramError::InvalidArgument)?;
-    let supply = to_numeric(supply_value, mint_a_decimals)?;
+    let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
     let in_amount = to_numeric(args.in_amount, mint_a_decimals)?;
     let fee_rate = from_basis_points(pool.sell_fee)?;
 
-    let total_tokens = curve.tokens_to_value(&supply, &in_amount)
+    let mut total_value = curve.tokens_to_value_from_current_value(&value_left, &in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
-    let fee_amount = total_tokens.checked_mul(&fee_rate)
+    if value_left.less_than(&total_value) {
+        total_value = value_left
+    }
+    let fee_amount = total_value.checked_mul(&fee_rate)
         .ok_or(ProgramError::InvalidArgument)?;
-    let tokens_after_fee = total_tokens.checked_sub(&fee_amount)
+    let value_after_fee = total_value.checked_sub(&fee_amount)
         .ok_or(ProgramError::InvalidArgument)?;
 
     solana_program::msg!("selling: {}", args.in_amount);
-    solana_program::msg!("for: {}", total_tokens.to_string());
+    solana_program::msg!("for: {}", total_value.to_string());
     solana_program::msg!("fee: {}", fee_amount.to_string());
-    solana_program::msg!("tokens_after_fee: {}", tokens_after_fee.to_string());
+    solana_program::msg!("value_after_fee: {}", value_after_fee.to_string());
 
-    let total_tokens_raw = from_numeric(total_tokens.clone(), mint_b_decimals)?;
     let fee_amount_raw = from_numeric(fee_amount.clone(), mint_b_decimals)?;
-    let tokens_after_fee_raw = from_numeric(tokens_after_fee.clone(), mint_b_decimals)?;
+    let value_after_fee_raw = from_numeric(value_after_fee.clone(), mint_b_decimals)?;
 
     check_condition(
-        tokens_after_fee_raw >= args.min_amount_out,
+        value_after_fee_raw >= args.min_amount_out,
         "Slippage exceeded"
     )?;
-
-    solana_program::msg!("deposit tokens");
 
     transfer(
         seller_info,
@@ -108,17 +102,12 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         args.in_amount,
     )?;
 
-    solana_program::msg!("withdraw tokens");
-
-    base_vault_info.as_token_account()?
-        .assert(|t| t.amount() >= total_tokens_raw)?;
-
     transfer_signed_with_bump(
         base_vault_info,
         base_vault_info,
         seller_base_ata_info,
         token_program_info,
-        tokens_after_fee_raw,
+        value_after_fee_raw,
         &[
             TREASURY,
             pool_info.key.as_ref(),

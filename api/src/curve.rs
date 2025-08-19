@@ -60,7 +60,7 @@ impl ExponentialCurve {
          current_value: &UnsignedNumeric,
          tokens: &UnsignedNumeric,
     ) -> Option<UnsignedNumeric> {
-        // value = (current_value + a) * (1 - e^(-c * tokens))
+        // value = (current_value + a * b / c) * (1 - e^(-c * tokens))
 
         let numerator = self.a.checked_mul(&self.b)?;
         let ab_over_c = numerator.checked_div(&self.c)?;

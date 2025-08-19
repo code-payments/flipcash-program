@@ -91,6 +91,16 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         "Currency mint does not match"
     )?;
 
+    check_condition(
+        args.buy_fee < 10000,
+        "Buy fee must be less than 10,000 bps"
+    )?;
+
+    check_condition(
+        args.sell_fee < 10000,
+        "Sell fee must be less than 10,000 bps"
+    )?;
+
     create_token_account(
         target_mint_info,
         target_vault_info,

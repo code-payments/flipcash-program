@@ -96,6 +96,16 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let tokens_after_fee_raw = from_numeric(tokens_after_fee.clone(), mint_a_decimals)?;
 
     check_condition(
+        tokens_after_fee_raw > 0,
+        "No tokens bought"
+    )?;
+    if pool.buy_fee > 0 {
+        check_condition(
+            fee_amount_raw > 0,
+            "No fees generated"
+        )?;
+    }
+    check_condition(
         tokens_after_fee_raw >= args.min_amount_out,
         "Slippage exceeded"
     )?;

@@ -90,6 +90,16 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
     let value_after_fee_raw = from_numeric(value_after_fee.clone(), mint_b_decimals)?;
 
     check_condition(
+        value_after_fee_raw > 0,
+        "No value received"
+    )?;
+    if pool.sell_fee > 0 {
+        check_condition(
+            fee_amount_raw > 0,
+            "No fees generated"
+        )?;
+    }
+    check_condition(
         value_after_fee_raw >= args.min_amount_out,
         "Slippage exceeded"
     )?;

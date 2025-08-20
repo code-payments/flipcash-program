@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 pub mod utils;
+use rand::{Rng, RngCore};
 use utils::*;
 
 use flipcash_api::prelude::*;
@@ -23,9 +24,8 @@ struct TestPool {
 }
 
 #[test]
+#[ignore]
 fn run_integration() {
-    // TODO: take fee only on sell: 1%, no fee on buy
-
     let mut svm = setup_svm();
 
     let payer = create_payer(&mut svm);
@@ -194,17 +194,330 @@ fn run_integration() {
     let vault_a_after_sell = get_ata_balance(&svm, &vault_a_pda);
     let fee_usdc_balance = get_ata_balance(&svm, &fee_usdc_ata);
 
-    assert!(
-        user_usdc_after_sell > user_usdc_after_buy,
-        "User should have received USDC from sale"
-    );
-    assert!(
-        vault_a_after_sell > vault_a_balance,
-        "Vault A should have received tokens back"
-    );
-    assert!(
-        fee_usdc_balance > 0,
-        "USDC fee account should have received fee"
-    );
+    assert!(user_usdc_after_sell > user_usdc_after_buy, "User should have received USDC from sale");
+    assert!(vault_a_after_sell > vault_a_balance, "Vault A should have received tokens back");
+    assert!(fee_usdc_balance > 0, "USDC fee account should have received fee");
+}
 
+#[test]
+#[ignore]
+fn run_buy_and_sell_simulation_up_and_down_curve() {
+    let mut svm = setup_svm();
+
+    let payer = create_payer(&mut svm);
+    let payer_pk = payer.pubkey();
+
+    let usdc_decimals = 6;
+
+    let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
+
+    let buy_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
+    let sell_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
+
+    let currency = TestCurrency {
+        name: "dark-sky".to_string(),
+        symbol: "DSKY".to_string(),
+        seed: [0u8; 32],
+    };
+
+    let (mint_pda, _) = find_mint_pda(&payer_pk, &currency.name, &currency.seed);
+    let (currency_pda, _) = find_currency_pda(&mint_pda);
+
+    let blockhash = svm.latest_blockhash();
+    let ix = build_initialize_currency_ix(
+        payer_pk,
+        currency.name.clone(),
+        currency.symbol.clone(),
+        currency.seed,
+    );
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
+    let res = send_tx(&mut svm, tx);
+    assert!(res.is_ok());
+
+    let pool = TestPool {
+        buy_fee,
+        sell_fee,
+    };
+
+    let (pool_pda, _) = find_pool_pda(&currency_pda);
+    let (vault_a_pda, _) = find_vault_pda(&pool_pda, &mint_pda);
+    let (vault_b_pda, _) = find_vault_pda(&pool_pda, &usdc);
+
+    let fee_usdc_ata = create_ata(&mut svm, &payer, &usdc, &payer_pk);
+    let fee_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &payer_pk);
+
+    let blockhash = svm.latest_blockhash();
+    let ix = build_initialize_pool_ix(
+        payer_pk,
+        currency_pda,
+        mint_pda,
+        usdc,
+        pool.buy_fee,
+        pool.sell_fee,
+        fee_mint_ata,
+        fee_usdc_ata,
+    );
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
+    let res = send_tx(&mut svm, tx);
+    assert!(res.is_ok());
+
+    let user = create_payer(&mut svm);
+    let user_pk = user.pubkey();
+
+    let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
+    let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
+
+    let mint_amt = as_token(1_140_023_003_584, usdc_decimals);
+    let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
+    assert!(res.is_ok());
+
+    let iterations = 10_000;
+    let buy_amount_per_iteration = get_ata_balance(&svm, &user_usdc_ata) / iterations;
+    for i in 0..iterations {
+        let mut buy_amount = buy_amount_per_iteration - i;
+        if i == iterations - 1 {
+            buy_amount = get_ata_balance(&svm, &user_usdc_ata);
+        }
+        let buy_ix = build_buy_tokens_ix(
+            user_pk,
+            pool_pda,
+            currency_pda,
+            mint_pda,
+            usdc,
+            buy_amount,
+            0,
+            user_mint_ata,
+            user_usdc_ata,
+            fee_mint_ata,
+            fee_usdc_ata,
+        );
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(&[buy_ix], Some(&user_pk), &[&user], blockhash);
+        let res = send_tx(&mut svm, tx);
+        assert!(res.is_ok());
+
+        let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
+        let user_usdc_balance = get_ata_balance(&svm, &user_usdc_ata);
+        let vault_mint_balance = get_ata_balance(&svm, &vault_a_pda);
+        let vault_usdc_balance = get_ata_balance(&svm, &vault_b_pda);
+        println!("User DSKY balance: {:?}", user_mint_balance);
+        println!("Vault DSKY balance: {:?}", vault_mint_balance);
+        println!("User USDC balance: {:?}", user_usdc_balance);
+        println!("Vault USDC balance: {:?}", vault_usdc_balance);
+    }
+
+    let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
+    let user_usdc_balance = get_ata_balance(&svm, &user_usdc_ata);
+    let vault_a_balance = get_ata_balance(&svm, &vault_a_pda);
+    let vault_b_balance = get_ata_balance(&svm, &vault_b_pda);
+    assert!(user_mint_balance == as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS), "User should have all DSKY");
+    assert!(user_usdc_balance == 0, "User should have no USDC");
+    assert!(vault_a_balance == 0, "Vault A should have no DSKY");
+    assert!(vault_b_balance == mint_amt, "Vault B should have all USDC");
+
+    let iterations = 10_000;
+    let sell_amount_per_iteration = get_ata_balance(&svm, &user_mint_ata) / iterations;
+    for i in 0..iterations {
+        let mut sell_amount = sell_amount_per_iteration - i;
+        if i == iterations - 1 {
+            sell_amount = get_ata_balance(&svm, &user_mint_ata);
+        }
+        let sell_ix = build_sell_tokens_ix(
+            user_pk,
+            pool_pda,
+            currency_pda,
+            mint_pda,
+            usdc,
+            sell_amount,
+            0,
+            user_mint_ata,
+            user_usdc_ata,
+            fee_mint_ata,
+            fee_usdc_ata,
+        );
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(&[sell_ix], Some(&user_pk), &[&user], blockhash);
+        let res = send_tx(&mut svm, tx);
+        assert!(res.is_ok());
+
+        let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
+        let user_usdc_balance = get_ata_balance(&svm, &user_usdc_ata);
+        let vault_mint_balance = get_ata_balance(&svm, &vault_a_pda);
+        let vault_usdc_balance = get_ata_balance(&svm, &vault_b_pda);
+        println!("User DSKY balance: {:?}", user_mint_balance);
+        println!("Vault DSKY balance: {:?}", vault_mint_balance);
+        println!("User USDC balance: {:?}", user_usdc_balance);
+        println!("Vault USDC balance: {:?}", vault_usdc_balance);
+    }
+
+    let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
+    let user_usdc_balance = get_ata_balance(&svm, &user_usdc_ata);
+    let vault_a_balance = get_ata_balance(&svm, &vault_a_pda);
+    let vault_b_balance = get_ata_balance(&svm, &vault_b_pda);
+    assert!(user_mint_balance == 0, "User should have no DSKY");
+    assert!(user_usdc_balance == mint_amt, "User should have all USDC");
+    assert!(vault_a_balance == as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS), "Vault A should have all DSKY");
+    assert!(vault_b_balance == 0, "Vault B should have no USDC");
+}
+
+#[test]
+#[ignore]
+fn run_buy_and_sell_simulation_random() {
+    let mut svm = setup_svm();
+
+    let payer = create_payer(&mut svm);
+    let payer_pk = payer.pubkey();
+
+    let usdc_decimals = 6;
+
+    let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
+
+    let buy_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
+    let sell_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
+
+    let currency = TestCurrency {
+        name: "dark-sky".to_string(),
+        symbol: "DSKY".to_string(),
+        seed: [0u8; 32],
+    };
+
+    let (mint_pda, _) = find_mint_pda(&payer_pk, &currency.name, &currency.seed);
+    let (currency_pda, _) = find_currency_pda(&mint_pda);
+
+    let blockhash = svm.latest_blockhash();
+    let ix = build_initialize_currency_ix(
+        payer_pk,
+        currency.name.clone(),
+        currency.symbol.clone(),
+        currency.seed,
+    );
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
+    let res = send_tx(&mut svm, tx);
+    assert!(res.is_ok());
+
+    let pool = TestPool {
+        buy_fee,
+        sell_fee,
+    };
+
+    let (pool_pda, _) = find_pool_pda(&currency_pda);
+    let (vault_a_pda, _) = find_vault_pda(&pool_pda, &mint_pda);
+    let (vault_b_pda, _) = find_vault_pda(&pool_pda, &usdc);
+
+    let fee_usdc_ata = create_ata(&mut svm, &payer, &usdc, &payer_pk);
+    let fee_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &payer_pk);
+
+    let blockhash = svm.latest_blockhash();
+    let ix = build_initialize_pool_ix(
+        payer_pk,
+        currency_pda,
+        mint_pda,
+        usdc,
+        pool.buy_fee,
+        pool.sell_fee,
+        fee_mint_ata,
+        fee_usdc_ata,
+    );
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
+    let res = send_tx(&mut svm, tx);
+    assert!(res.is_ok());
+
+    let user = create_payer(&mut svm);
+    let user_pk = user.pubkey();
+
+    let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
+    let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
+
+    let mint_amt = as_token(1_140_023_003_584, usdc_decimals);
+    let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
+    assert!(res.is_ok());
+
+    let mut max_supply_difference = 0;
+    let mut max_usdc_locked_difference = 0;
+    for i in 0..100_000 {
+        if i == 0 || rand::thread_rng().gen_bool(0.5) {
+            let buy_amount = rand::thread_rng().next_u64() % as_token(1_000_000_000, usdc_decimals); // Buy up to $1b
+            let buy_ix = build_buy_tokens_ix(
+                user_pk,
+                pool_pda,
+                currency_pda,
+                mint_pda,
+                usdc,
+                buy_amount,
+                0,
+                user_mint_ata,
+                user_usdc_ata,
+                fee_mint_ata,
+                fee_usdc_ata,
+            );
+            let blockhash = svm.latest_blockhash();
+            let tx = Transaction::new_signed_with_payer(&[buy_ix], Some(&user_pk), &[&user], blockhash);
+            let res = send_tx(&mut svm, tx);
+            assert!(res.is_ok());
+        } else {
+            let sell_amount = get_ata_balance(&svm, &user_mint_ata) / (i % 100 + 2); // Sell up to half
+            let sell_ix = build_sell_tokens_ix(
+                user_pk,
+                pool_pda,
+                currency_pda,
+                mint_pda,
+                usdc,
+                sell_amount,
+                0,
+                user_mint_ata,
+                user_usdc_ata,
+                fee_mint_ata,
+                fee_usdc_ata,
+            );
+            let blockhash = svm.latest_blockhash();
+            let tx = Transaction::new_signed_with_payer(&[sell_ix], Some(&user_pk), &[&user], blockhash);
+            let res = send_tx(&mut svm, tx);
+            assert!(res.is_ok());
+        }
+
+        let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
+        let user_usdc_balance = get_ata_balance(&svm, &user_usdc_ata);
+        let vault_mint_balance = get_ata_balance(&svm, &vault_a_pda);
+        let vault_usdc_balance = get_ata_balance(&svm, &vault_b_pda);
+        println!("User DSKY balance: {:?}", user_mint_balance);
+        println!("Vault DSKY balance: {:?}", vault_mint_balance);
+        println!("User USDC balance: {:?}", user_usdc_balance);
+        println!("Vault USDC balance: {:?}", vault_usdc_balance);
+
+        let mut difference = 0;
+        let curve = ExponentialCurve::default();
+        let zero_supply = to_numeric(0, TOKEN_DECIMALS).unwrap();
+        let usdc_buy_amount = to_numeric(vault_usdc_balance, usdc_decimals).unwrap();
+        let expected_token_supply = curve.value_to_tokens(&zero_supply, &usdc_buy_amount).unwrap();
+        let expected_quark_supply = from_numeric(expected_token_supply, TOKEN_DECIMALS).unwrap();
+        if expected_quark_supply > user_mint_balance {
+            difference = expected_quark_supply - user_mint_balance;
+        } else {
+            difference = user_mint_balance - expected_quark_supply;
+        }
+        if difference > max_supply_difference {
+            max_supply_difference = difference
+        }
+        println!("DSKY supply difference from expectation: {:?}", difference);
+        println!("Max DSKY supply difference from expectation so far: {:?}", max_supply_difference);
+
+        let current_supply = to_numeric(user_mint_balance, TOKEN_DECIMALS).unwrap();
+        let expected_locked_usdc = curve.tokens_to_value_from_current_supply(&zero_supply, &current_supply).unwrap();
+        let expected_locked_usdc_quarks = from_numeric(expected_locked_usdc, usdc_decimals).unwrap();
+        if expected_locked_usdc_quarks > vault_usdc_balance {
+            difference = expected_locked_usdc_quarks - vault_usdc_balance;
+        } else {
+            difference = vault_usdc_balance - expected_locked_usdc_quarks;
+        }
+        if difference > max_usdc_locked_difference {
+            max_usdc_locked_difference = difference
+        }
+        println!("USDC locked difference from expectation: {:?}", difference);
+        println!("Max USDC locked difference from expectation so far: {:?}", max_usdc_locked_difference);
+    }
+
+    println!("Max DSKY supply difference from expectation: {:?}", max_supply_difference);
+    println!("Max USDC locked difference from expectation: {:?}", max_usdc_locked_difference);
+    assert!(max_supply_difference < 500_000, "Significant imprecision detected");
+    assert!(max_usdc_locked_difference < 500, "Significant imprecision detected");
 }

@@ -31,13 +31,13 @@ fn run_integration() {
     let payer = create_payer(&mut svm);
     let payer_pk = payer.pubkey();
 
-    let usdc_decimals = 9;
-    let darksky_decimals = 6;
+    let usdc_decimals = 6;
+    let darksky_decimals = TOKEN_DECIMALS;
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let buy_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
-    let sell_fee = to_basis_points(&to_numeric(5, 4).unwrap()).unwrap();
+    let buy_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
+    let sell_fee = to_basis_points(&to_numeric(1, 2).unwrap()).unwrap();
 
     let currency = TestCurrency {
         name: "dark-sky".to_string(),
@@ -168,7 +168,7 @@ fn run_integration() {
     assert!(user_mint_balance > 0, "User should have received some tokens");
     assert!(vault_a_balance > 0, "Vault A should have been debited");
     assert!(vault_b_balance > 0, "Vault B should have received funds");
-    assert!(fee_mint_balance > 0, "Fee in mint should have been collected");
+    assert!(fee_mint_balance == 0, "Fee in mint shouldn't have been collected");
 
     // SELL
     let sell_amount = as_token(25, darksky_decimals);

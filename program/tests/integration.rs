@@ -24,7 +24,6 @@ struct TestPool {
 }
 
 #[test]
-#[ignore]
 fn run_integration() {
     let mut svm = setup_svm();
 

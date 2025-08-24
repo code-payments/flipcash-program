@@ -12,6 +12,7 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
         metadata_info,
 
         metadata_program_info,
+        token_program_info,
         system_program_info,
         rent_sysvar_info,
     ] = accounts else {
@@ -21,9 +22,11 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
     solana_program::msg!("Args: {:?}", args);
 
     check_signer(authority_info)?;
+    check_mut(mint_info)?;
     check_mut(metadata_info)?;
 
     check_program(metadata_program_info, &mpl_token_metadata::ID)?;
+    check_program(token_program_info, &spl_token::id())?;
     check_program(system_program_info, &system_program::id())?;
     check_sysvar(rent_sysvar_info, &sysvar::rent::id())?;
 
@@ -80,6 +83,22 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
              currency.seed.as_ref(),
              &[currency.mint_bump]
         ]],
+    )?;
+
+    // Now that metaplex metadata been uploaded, we can remove mint authority.
+    set_authority_signed_with_bump(
+        mint_info,
+        mint_info,
+        Option::None,
+        spl_token_2022::instruction::AuthorityType::MintTokens,
+        token_program_info,
+        &[
+             MINT,
+             authority_info.key.as_ref(),
+             currency.name.as_ref(),
+             currency.seed.as_ref(),
+        ],
+        currency.mint_bump,
     )?;
 
     Ok(())

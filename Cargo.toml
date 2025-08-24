@@ -29,6 +29,7 @@ solana-transaction-status = "=2.1"
 solana-transaction-status-client-types = "=2.1"
 solana-account-decoder = "=2.1"
 spl-associated-token-account = { features = ["no-entrypoint"], version = "^6" }
+spl-token-2022 = { features = ["no-entrypoint"], version = "7" }
 spl-token = { features = ["no-entrypoint"], version = "^4" }
 steel = { version="4.0.0", features = ["spl"] }
 uint = "0.8"

@@ -23,6 +23,7 @@ flipcash-api.workspace = true
 solana-program.workspace = true
 steel.workspace = true
 spl-token.workspace = true
+spl-token-2022.workspace = true
 spl-associated-token-account.workspace = true
 bytemuck.workspace = true
 mpl-token-metadata.workspace = true

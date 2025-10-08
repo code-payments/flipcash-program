@@ -139,7 +139,7 @@ flipcash-cli buy --mint <PUBKEY> --base-mint <PUBKEY> --amount <F64>
 **Functionality in Flipcash Program:**
 - Calls the `buy` instruction on the Flipcash program.
 - Transfers base tokens from the user's ATA to the pool's vault.
-- Mints and transfers the equivalent amount of currency tokens to the user (likely based on a pricing mechanism like a bonding curve, though details are in the program code).
+- Mints and transfers the equivalent amount of currency tokens to the user.
 - Applies buy fees as configured in the pool.
 
 ### sell

@@ -17,7 +17,7 @@ The program uses PDAs for accounts like currency and pool to ensure deterministi
 
 ## CLI
 
-The Flipcash CLI is a command-line interface tool built in Rust for interacting with the Flipcash Solana program. Flipcash appears to be a Solana-based protocol for creating custom currencies backed by a base mint (e.g., a stablecoin like USDC), managing liquidity pools, and facilitating buy/sell operations on those currencies. The CLI allows users to create test mints, initialize currencies and pools, retrieve metadata, and perform trades.
+The Flipcash CLI is a command-line interface tool built in Rust for interacting with the Flipcash Solana program. Flipcash provides a Solana-based protocol for creating custom currencies backed by a base mint (e.g., a stablecoin like USDC), managing liquidity pools, and facilitating buy/sell operations on those currencies. The CLI allows users to create test mints, initialize currencies and pools, retrieve metadata, and perform trades.
 
 The CLI supports various Solana clusters (localnet, mainnet, devnet, testnet, or custom RPC URLs) and requires a Solana keypair for signing transactions.
 

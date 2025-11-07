@@ -194,3 +194,105 @@ pub fn build_sell_tokens_ix(
         }).to_bytes(),
     }
 }
+
+pub fn build_buy_and_deposit_into_vm_ix(
+    buyer: Pubkey,
+    pool: Pubkey,
+    currency: Pubkey,
+    target_mint: Pubkey,
+    base_mint: Pubkey,
+    buyer_base_ata: Pubkey,
+    fee_target: Pubkey,
+    fee_base: Pubkey,
+    vm_authority: Pubkey,
+	vm: Pubkey,
+	vm_memory: Pubkey,
+	vm_omnibus: Pubkey,
+	vta_owner: Pubkey,
+    in_amount: u64,
+    min_amount_out: u64,
+) -> Instruction {
+    let (vault_a_pda, vault_a_bump) = find_vault_pda(&pool, &target_mint);
+    let (vault_b_pda, vault_b_bump) = find_vault_pda(&pool, &base_mint);
+
+    println!("vault_a_pda: {}, bump: {} (target)", vault_a_pda, vault_a_bump);
+    println!("vault_b_pda: {}, bump: {} (base)", vault_b_pda, vault_b_bump);
+
+    Instruction {
+        program_id: crate::ID,
+        accounts: vec![
+            AccountMeta::new(buyer, true),
+            AccountMeta::new(pool, false),
+            AccountMeta::new(currency, false),
+            AccountMeta::new(target_mint, false),
+            AccountMeta::new_readonly(base_mint, false),
+            AccountMeta::new(vault_a_pda, false),
+            AccountMeta::new(vault_b_pda, false),
+            AccountMeta::new(buyer_base_ata, false),
+            AccountMeta::new(fee_target, false),
+            AccountMeta::new_readonly(fee_base, false),
+            AccountMeta::new(vm_authority, true),
+            AccountMeta::new(vm, false),
+            AccountMeta::new(vm_memory, false),
+            AccountMeta::new(vm_omnibus, false),
+            AccountMeta::new_readonly(vta_owner, false),
+            AccountMeta::new_readonly(spl_token::id(), false),
+            AccountMeta::new_readonly(VM_PROGRAM_ID, false),
+        ],
+        data: BuyTokensIx::from_struct(ParsedBuyTokensIx {
+            in_amount,
+            min_amount_out,
+        }).to_bytes(),
+    }
+}
+
+pub fn build_sell_and_deposit_into_vm_ix(
+    seller: Pubkey,
+    pool: Pubkey,
+    currency: Pubkey,
+    target_mint: Pubkey,
+    base_mint: Pubkey,
+    seller_target_ata: Pubkey,
+    fee_target: Pubkey,
+    fee_base: Pubkey,
+    vm_authority: Pubkey,
+	vm: Pubkey,
+	vm_memory: Pubkey,
+	vm_omnibus: Pubkey,
+	vta_owner: Pubkey,
+    in_amount: u64,
+    min_amount_out: u64,
+) -> Instruction {
+    let (vault_a_pda, vault_a_bump) = find_vault_pda(&pool, &target_mint);
+    let (vault_b_pda, vault_b_bump) = find_vault_pda(&pool, &base_mint);
+
+    println!("vault_a_pda: {}, bump: {} (target)", vault_a_pda, vault_a_bump);
+    println!("vault_b_pda: {}, bump: {} (base)", vault_b_pda, vault_b_bump);
+
+    Instruction {
+        program_id: crate::ID,
+        accounts: vec![
+            AccountMeta::new(seller, true),
+            AccountMeta::new(pool, false),
+            AccountMeta::new(currency, false),
+            AccountMeta::new(target_mint, false),
+            AccountMeta::new_readonly(base_mint, false),
+            AccountMeta::new(vault_a_pda, false),
+            AccountMeta::new(vault_b_pda, false),
+            AccountMeta::new(seller_target_ata, false),
+            AccountMeta::new_readonly(fee_target, false),
+            AccountMeta::new(fee_base, false),
+            AccountMeta::new(vm_authority, true),
+            AccountMeta::new(vm, false),
+            AccountMeta::new(vm_memory, false),
+            AccountMeta::new(vm_omnibus, false),
+            AccountMeta::new_readonly(vta_owner, false),
+            AccountMeta::new_readonly(spl_token::id(), false),
+            AccountMeta::new_readonly(VM_PROGRAM_ID, false),
+        ],
+        data: SellTokensIx::from_struct(ParsedSellTokensIx {
+            in_amount,
+            min_amount_out,
+        }).to_bytes(),
+    }
+}

@@ -12,6 +12,8 @@ pub enum InstructionType {
 
     BuyTokensIx,
     SellTokensIx,
+    BuyAndDepositIntoVmIx,
+    SellAndDepositIntoVmIx
 }
 
 instruction!(InstructionType, InitializeCurrencyIx);
@@ -19,6 +21,8 @@ instruction!(InstructionType, InitializePoolIx);
 instruction!(InstructionType, InitializeMetadataIx);
 instruction!(InstructionType, BuyTokensIx);
 instruction!(InstructionType, SellTokensIx);
+instruction!(InstructionType, BuyAndDepositIntoVmIx);
+instruction!(InstructionType, SellAndDepositIntoVmIx);
 
 #[derive(Debug)]
 pub struct ParsedInitializeCurrencyIx {
@@ -200,4 +204,68 @@ impl SellTokensIx {
     }
 }
 
+#[derive(Debug)]
+pub struct ParsedBuyAndDepositIntoVmIx {
+    pub in_amount: u64,
+    pub min_amount_out: u64,
+    pub vm_memory_index: u16,
+}
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct BuyAndDepositIntoVmIx {
+    pub in_amount: [u8; 8],
+    pub min_amount_out: [u8; 8],
+    pub vm_memory_index: [u8; 2],
+}
+
+impl BuyAndDepositIntoVmIx {
+    pub fn from_struct(parsed: ParsedBuyAndDepositIntoVmIx) -> Self {
+        Self {
+            in_amount: parsed.in_amount.to_le_bytes(),
+            min_amount_out: parsed.min_amount_out.to_le_bytes(),
+            vm_memory_index: parsed.vm_memory_index.to_le_bytes(),
+        }
+    }
+
+    pub fn to_struct(&self) -> ParsedBuyAndDepositIntoVmIx {
+        ParsedBuyAndDepositIntoVmIx {
+            in_amount: u64::from_le_bytes(self.in_amount),
+            min_amount_out: u64::from_le_bytes(self.min_amount_out),
+            vm_memory_index: u16::from_le_bytes(self.vm_memory_index),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ParsedSellAndDepositIntoVmIx {
+    pub in_amount: u64,
+    pub min_amount_out: u64,
+    pub vm_memory_index: u16,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct SellAndDepositIntoVmIx {
+    pub in_amount: [u8; 8],
+    pub min_amount_out: [u8; 8],
+    pub vm_memory_index: [u8; 2],
+}
+
+impl SellAndDepositIntoVmIx {
+    pub fn from_struct(parsed: ParsedSellAndDepositIntoVmIx) -> Self {
+        Self {
+            in_amount: parsed.in_amount.to_le_bytes(),
+            min_amount_out: parsed.min_amount_out.to_le_bytes(),
+            vm_memory_index: parsed.vm_memory_index.to_le_bytes(),
+        }
+    }
+
+    pub fn to_struct(&self) -> ParsedSellAndDepositIntoVmIx {
+        ParsedSellAndDepositIntoVmIx {
+            in_amount: u64::from_le_bytes(self.in_amount),
+            min_amount_out: u64::from_le_bytes(self.min_amount_out),
+            vm_memory_index: u16::from_le_bytes(self.vm_memory_index),
+        }
+    }
+}

@@ -22,6 +22,10 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
+    buyer_target_ata_info.as_token_account()?
+        .assert(|t| t.owner().eq(buyer_info.key))?
+        .assert(|t| t.mint().eq(target_mint_info.key))?;
+
     solana_program::msg!("Args: {:?}", args);
 
     let tokens_after_fee_raw= buy_common(
@@ -92,6 +96,9 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
     check_mut(vm_memory_info)?;
     check_program(vm_program_info, &VM_PROGRAM_ID)?;
 
+    vm_omnibus_info.as_token_account()?
+        .assert(|t| t.mint().eq(target_mint_info.key))?;
+
     let tokens_after_fee_raw= buy_common(
         buyer_info,
         pool_info,
@@ -109,6 +116,7 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
         args.min_amount_out,
     )?;
 
+    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
     deposit_into_vm(
         vm_authority_info,
         vm_info,
@@ -122,7 +130,8 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
         &[
             TREASURY,
             pool_info.key.as_ref(),
-            target_mint_info.key.as_ref()
+            target_mint_info.key.as_ref(),
+            &[pool.vault_a_bump]
         ],
         token_program_info,
         vm_program_info,
@@ -161,10 +170,6 @@ fn buy_common<'info>(
 
     target_mint_info.as_mint()?;
     base_mint_info.as_mint()?;
-
-    buyer_target_ata_info.as_token_account()?
-        .assert(|t| t.owner().eq(buyer_info.key))?
-        .assert(|t| t.mint().eq(target_mint_info.key))?;
 
     buyer_base_ata_info.as_token_account()?
         .assert(|t| t.owner().eq(buyer_info.key))?

@@ -4,7 +4,7 @@ pub const POOL: &[u8]           = b"pool";
 pub const TREASURY: &[u8]       = b"treasury";
 pub const METADATA: &[u8]       = b"metadata";
 
-pub const METADATA_URI: &str    = "https://fun.flipcash.com/{}/metadata.json";
+pub const METADATA_URI: &str    = "https://currency.flipcash.com/{}/metadata.json";
 
 pub const MAX_NAME_LEN: usize   = 32;
 pub const MAX_SYMBOL_LEN: usize = 8;

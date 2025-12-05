@@ -1,4 +1,3 @@
-use steel::*;
 use brine_fp::UnsignedNumeric;
 use crate::consts::*;
 
@@ -230,6 +229,39 @@ mod tests {
             );
 
             supply = supply.checked_add(&step_size).unwrap();
+        }
+    }
+
+    #[test]
+    fn test_discrete_pricing_table_matches_continuous_curve() {
+        use crate::discrete_pricing_table::DISCRETE_PRICING_TABLE;
+
+        let curve = ContinuousExponentialCurve::default();
+        let step_size = UnsignedNumeric::new(100).unwrap(); // 100 tokens per step
+
+        // Allow for small rounding errors (tolerance of 1 unit in the 18th decimal place)
+        let tolerance = 1; // 0.000000000000000001 in 18 decimal precision
+
+        for (index, &table_price) in DISCRETE_PRICING_TABLE.iter().enumerate() {
+            // Calculate supply for this index: supply = index * 100
+            let supply = UnsignedNumeric::new(index as u128)
+                .unwrap()
+                .checked_mul(&step_size)
+                .unwrap();
+
+            // Get spot price from continuous curve
+            let curve_price = curve.spot_price_at_supply(&supply)
+                .expect(&format!("Failed to calculate spot price at supply {}", index * 100));
+
+            // Convert table price to UnsignedNumeric for comparison
+            let table_price_numeric = UnsignedNumeric::from_scaled_u128(table_price);
+
+            // Assert they match within tolerance
+            assert_approx_eq(
+                &curve_price,
+                &table_price_numeric,
+                tolerance,
+            );
         }
     }
 }

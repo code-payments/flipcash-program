@@ -239,9 +239,6 @@ mod tests {
         let curve = ContinuousExponentialCurve::default();
         let step_size = UnsignedNumeric::new(100).unwrap(); // 100 tokens per step
 
-        // Allow for small rounding errors (tolerance of 1 unit in the 18th decimal place)
-        let tolerance = 1; // 0.000000000000000001 in 18 decimal precision
-
         for (index, &table_price) in DISCRETE_PRICING_TABLE.iter().enumerate() {
             // Calculate supply for this index: supply = index * 100
             let supply = UnsignedNumeric::new(index as u128)
@@ -260,7 +257,7 @@ mod tests {
             assert_approx_eq(
                 &curve_price,
                 &table_price_numeric,
-                tolerance,
+                0,
             );
         }
     }

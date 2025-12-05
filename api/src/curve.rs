@@ -94,32 +94,6 @@ impl ContinuousExponentialCurve {
     }
 }
 
-#[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
-pub struct RawContinuousExponentialCurve {
-    a: [u8; 24],
-    b: [u8; 24],
-    c: [u8; 24],
-}
-
-impl RawContinuousExponentialCurve {
-    pub fn from_struct(parsed: ContinuousExponentialCurve) -> Self {
-        Self {
-            a: parsed.a.to_bytes(),
-            b: parsed.b.to_bytes(),
-            c: parsed.c.to_bytes(),
-        }
-    }
-
-    pub fn to_struct(&self) -> Result<ContinuousExponentialCurve, std::io::Error> {
-        Ok(ContinuousExponentialCurve {
-            a: UnsignedNumeric::from_bytes(&self.a),
-            b: UnsignedNumeric::from_bytes(&self.b),
-            c: UnsignedNumeric::from_bytes(&self.c),
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

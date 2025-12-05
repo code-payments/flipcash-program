@@ -445,7 +445,7 @@ fn run_buy_and_sell_simulation_random() {
         println!("Vault USDC balance: {:?}", vault_usdc_balance);
 
         let mut difference = 0;
-        let curve = ExponentialCurve::default();
+        let curve = ContinuousExponentialCurve::default();
         let zero_supply = to_numeric(0, TOKEN_DECIMALS).unwrap();
         let usdc_buy_amount = to_numeric(vault_usdc_balance, usdc_decimals).unwrap();
         let expected_token_supply = curve.value_to_tokens(&zero_supply, &usdc_buy_amount).unwrap();

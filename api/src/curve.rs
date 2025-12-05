@@ -3,13 +3,13 @@ use brine_fp::UnsignedNumeric;
 use crate::consts::*;
 
 #[derive(Debug, Clone)]
-pub struct ExponentialCurve {
+pub struct ContinuousExponentialCurve {
     pub a: UnsignedNumeric,
     pub b: UnsignedNumeric,
     pub c: UnsignedNumeric,
 }
 
-impl ExponentialCurve {
+impl ContinuousExponentialCurve {
     pub fn default() -> Self {
         Self {
             a: UnsignedNumeric::from_scaled_u128(CURVE_A),
@@ -96,14 +96,14 @@ impl ExponentialCurve {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
-pub struct RawExponentialCurve {
+pub struct RawContinuousExponentialCurve {
     a: [u8; 24],
     b: [u8; 24],
     c: [u8; 24],
 }
 
-impl RawExponentialCurve {
-    pub fn from_struct(parsed: ExponentialCurve) -> Self {
+impl RawContinuousExponentialCurve {
+    pub fn from_struct(parsed: ContinuousExponentialCurve) -> Self {
         Self {
             a: parsed.a.to_bytes(),
             b: parsed.b.to_bytes(),
@@ -111,8 +111,8 @@ impl RawExponentialCurve {
         }
     }
 
-    pub fn to_struct(&self) -> Result<ExponentialCurve, std::io::Error> {
-        Ok(ExponentialCurve {
+    pub fn to_struct(&self) -> Result<ContinuousExponentialCurve, std::io::Error> {
+        Ok(ContinuousExponentialCurve {
             a: UnsignedNumeric::from_bytes(&self.a),
             b: UnsignedNumeric::from_bytes(&self.b),
             c: UnsignedNumeric::from_bytes(&self.c),
@@ -200,7 +200,7 @@ mod tests {
         let b = UnsignedNumeric::from_scaled_u128(CURVE_B);
         let c = UnsignedNumeric::from_scaled_u128(CURVE_C);
 
-        let curve = ExponentialCurve {
+        let curve = ContinuousExponentialCurve {
             a: a.clone(),
             b: b.clone(),
             c: c.clone(),
@@ -236,7 +236,7 @@ mod tests {
     #[test]
     #[ignore]
     fn export_curve_pricing_csv() {
-        let curve = ExponentialCurve::default();
+        let curve = ContinuousExponentialCurve::default();
 
         // CSV header
         println!("supply,spot_price");

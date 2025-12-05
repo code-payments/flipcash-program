@@ -187,7 +187,7 @@ fn sell_common<'info>(
         in_amount_raw = seller_target_ata_info.as_token_account()?.amount();
     }
 
-    let curve = ExponentialCurve::default();
+    let curve = ContinuousExponentialCurve::default();
     let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
     let in_amount = to_numeric(in_amount_raw, mint_a_decimals)?;
     let fee_rate = from_basis_points(pool.sell_fee)?;

@@ -2,6 +2,7 @@
 
 pub mod consts;
 pub mod curve;
+pub mod discrete_pricing_table;
 pub mod instruction;
 pub mod state;
 pub mod pda;
@@ -16,6 +17,7 @@ pub mod sdk;
 pub mod prelude {
     pub use crate::consts::*;
     pub use crate::curve::*;
+    pub use crate::discrete_pricing_table::*;
     pub use crate::instruction::*;
     pub use crate::state::*; 
     pub use crate::pda::*;

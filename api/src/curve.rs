@@ -232,4 +232,30 @@ mod tests {
         println!("|------|----------------|-----------------------------------|-----------------------------|");
         //assert!(false);
     }
+
+    #[test]
+    #[ignore]
+    fn export_curve_pricing_csv() {
+        let curve = ExponentialCurve::default();
+
+        // CSV header
+        println!("supply,spot_price");
+
+        let zero = UnsignedNumeric::zero();
+        let step_size = UnsignedNumeric::new(100).unwrap(); // 100 tokens per step
+        let mut supply = zero.clone();
+
+        // 0 to 21,000,000 in steps of 100 = 210,001 rows (including 0)
+        for _ in 0..=210_000 {
+            let spot_price = curve.spot_price_at_supply(&supply).unwrap();
+
+            println!(
+                "{},{}",
+                supply.to_string(),
+                spot_price.to_string(),
+            );
+
+            supply = supply.checked_add(&step_size).unwrap();
+        }
+    }
 }

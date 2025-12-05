@@ -1,4 +1,4 @@
-# Flipcash
+# Flipcash Currency Creator Program
 ![license][license-image]
 ![version][version-image]
 
@@ -6,11 +6,11 @@
 [license-image]: https://img.shields.io/badge/license-MIT-blue.svg?style=flat
 
 
-The Flipcash Solana program provides the following core features:
+The Flipcash Currency Creator program provides the following core features:
 
 - **Currency Initialization:** Creates a new SPL Token mint for a custom currency, with metadata stored in a PDA-derived account.
-- **Pool Creation:** Sets up a liquidity pool linked to the currency, backed by a base mint. The pool manages two vaults (one for the currency, one for the base), fee accumulators, and buy/sell fee rates (in basis points).
-- **Trading (Buy/Sell):** Allows users to buy currency tokens by depositing base tokens or sell currency tokens for base tokens. Fees are applied, and the pool likely uses a deterministic pricing model (e.g., constant product or bonding curve—exact logic in `flipcash_api`).
+- **Pool Creation:** Sets up a liquidity pool linked to the currency, backed by a base mint. The pool manages two vaults (one for the currency, one for the base), and sell fee rates (in basis points).
+- **Trading (Buy/Sell):** Allows users to buy currency tokens by depositing base tokens or sell currency tokens for base tokens. Fees are applied on sells, and the pool uses a deterministic pricing model via a discrete bonding curve logic found in `flipcash_api`.
 - **Metadata Retrieval:** Exposes account data for currencies and pools, including authorities, mints, vaults, and fees.
 
 The program uses PDAs for accounts like currency and pool to ensure deterministic addressing. All operations are asynchronous and use non-blocking RPC calls.
@@ -95,7 +95,7 @@ flipcash-cli create-currency --name <STRING> --symbol <STRING> --base-mint <PUBK
 **Functionality in Flipcash Program:**
 - Calls the `initialize` instruction on the Flipcash program.
 - Creates a currency account with metadata (authority, mint, name, symbol).
-- Creates a pool account linked to the currency, including vaults for the target currency and base mint, fee structures (buy/sell fees in basis points), and other metadata.
+- Creates a pool account linked to the currency, including vaults for the target currency and base mint, fee structures (sell fees in basis points), and other metadata.
 - PDAs (Program-Derived Addresses) are used for deterministic account addresses.
 
 ### get-currency
@@ -117,7 +117,7 @@ flipcash-cli get-currency --mint <PUBKEY>
 **Functionality in Flipcash Program:**
 - Derives the currency PDA and pool PDA from the mint.
 - Fetches and deserializes the currency and pool accounts from the blockchain.
-- Displays on-chain data, including fee rates (e.g., buy_fee and sell_fee in basis points, where 100 bps = 1%).
+- Displays on-chain data, including fee rates (e.g., sell_fee in basis points, where 100 bps = 1%).
 
 ### buy
 
@@ -140,7 +140,6 @@ flipcash-cli buy --mint <PUBKEY> --base-mint <PUBKEY> --amount <F64>
 - Calls the `buy` instruction on the Flipcash program.
 - Transfers base tokens from the user's ATA to the pool's vault.
 - Mints and transfers the equivalent amount of currency tokens to the user.
-- Applies buy fees as configured in the pool.
 
 ### sell
 

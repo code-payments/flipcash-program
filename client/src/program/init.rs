@@ -80,10 +80,7 @@ pub async fn initialize(
         currency_pda,
         mint_pda,
         base_mint,
-        BUY_FEE_BPS,
         SELL_FEE_BPS,
-        fee_mint_ata,
-        fee_base_ata,
     );
 
     let blockhash_bytes = get_latest_blockhash(client).await?;

@@ -8,7 +8,6 @@ use solana_sdk::{
 use solana_client::nonblocking::rpc_client::RpcClient;
 use flipcash_api::prelude::*;
 
-use crate::consts::*;
 use crate::utils::*;
 
 pub async fn sell(
@@ -25,8 +24,6 @@ pub async fn sell(
 
     let seller_target_ata = spl_associated_token_account::get_associated_token_address(&seller, &mint);
     let seller_base_ata = spl_associated_token_account::get_associated_token_address(&seller, &base_mint);
-    let fee_target = spl_associated_token_account::get_associated_token_address(&seller, &mint);
-    let fee_base = spl_associated_token_account::get_associated_token_address(&seller, &base_mint);
 
     // Create seller ATAs
     let (_target_ata, target_ata_sig) = create_ata(client, signer, &mint, &seller, None).await?;
@@ -40,7 +37,7 @@ pub async fn sell(
     }
 
     // Convert amount (in tokens) to token amount
-    let in_amount = (amount * 10f64.powi(DECIMAL_PLACES as i32)) as u64;
+    let in_amount = (amount * 10f64.powi(TOKEN_DECIMALS as i32)) as u64;
     let min_amount_out = 0; // Allow any output amount for simplicity
 
     let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(250_000);
@@ -54,8 +51,6 @@ pub async fn sell(
         min_amount_out,
         seller_target_ata,
         seller_base_ata,
-        fee_target,
-        fee_base,
     );
 
     let blockhash_bytes = get_latest_blockhash(client).await?;

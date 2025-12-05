@@ -25,8 +25,6 @@ pub async fn buy(
 
     let buyer_target_ata = spl_associated_token_account::get_associated_token_address(&buyer, &mint);
     let buyer_base_ata = spl_associated_token_account::get_associated_token_address(&buyer, &base_mint);
-    let fee_target = spl_associated_token_account::get_associated_token_address(&buyer, &mint);
-    let fee_base = spl_associated_token_account::get_associated_token_address(&buyer, &base_mint);
 
     // Create buyer ATAs
     let (_target_ata, target_ata_sig) = create_ata(client, signer, &mint, &buyer, None).await?;
@@ -54,8 +52,6 @@ pub async fn buy(
         min_amount_out,
         buyer_target_ata,
         buyer_base_ata,
-        fee_target,
-        fee_base,
     );
 
     let blockhash_bytes = get_latest_blockhash(client).await?;

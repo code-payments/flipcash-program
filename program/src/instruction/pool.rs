@@ -13,8 +13,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         pool_info,
         target_vault_info,
         base_vault_info,
-        fee_target_info,
-        fee_base_info,
         token_program_info,
         system_program_info,
         rent_sysvar_info,
@@ -45,22 +43,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         "Target and base mints must be different"
     )?;
 
-    check_condition(
-        fee_target_info.data_len() > 0,
-        "Fee target account is not initialized"
-    )?;
-
-    check_condition(
-        fee_base_info.data_len() > 0,
-        "Fee base account is not initialized"
-    )?;
-
-    fee_target_info.as_token_account()?
-        .assert(|t| t.mint().eq(target_mint_info.key))?;
-
-    fee_base_info.as_token_account()?
-        .assert(|t| t.mint().eq(base_mint_info.key))?;
-
     check_uninitialized_pda(
         pool_info,
         &[ POOL, currency_info.key.as_ref() ],
@@ -89,11 +71,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     check_condition(
         currency.mint.eq(target_mint_info.key),
         "Currency mint does not match"
-    )?;
-
-    check_condition(
-        args.buy_fee < 10000,
-        "Buy fee must be less than 10,000 bps"
     )?;
 
     check_condition(
@@ -168,9 +145,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     pool.mint_b = *base_mint_info.key;
     pool.vault_a = *target_vault_info.key;
     pool.vault_b = *base_vault_info.key;
-    pool.fees_a = *fee_target_info.key;
-    pool.fees_b = *fee_base_info.key;
-    pool.buy_fee = args.buy_fee;
     pool.sell_fee = args.sell_fee;
     pool.bump = args.bump;
     pool.vault_a_bump = args.vault_a_bump;

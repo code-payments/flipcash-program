@@ -13,11 +13,8 @@ pub struct LiquidityPool {
     pub mint_b: Pubkey,           // SPL Mint B (base, probably USDC)
     pub vault_a: Pubkey,          // Vault A (target)
     pub vault_b: Pubkey,          // Vault B (base)                                  
-    pub fees_a: Pubkey,           // Fees destination (target)
-    pub fees_b: Pubkey,           // Fees destination (base, probably USDC account)
 
     // Config
-    pub buy_fee: u16,             // Basis points (0.5% = 50)
     pub sell_fee: u16,            // Basis points (0.5% = 50)
 
     // Bump seeds for PDAs

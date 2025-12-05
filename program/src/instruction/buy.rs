@@ -15,8 +15,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         base_vault_info,
         buyer_target_ata_info,
         buyer_base_ata_info,
-        fee_target_info,
-        fee_base_info,
         token_program_info,
     ] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
@@ -38,8 +36,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         base_vault_info,
         buyer_target_ata_info,
         buyer_base_ata_info,
-        fee_target_info,
-        fee_base_info,
         token_program_info,
         args.in_amount,
         args.min_amount_out,
@@ -76,8 +72,6 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
         target_vault_info,
         base_vault_info,
         buyer_base_ata_info,
-        fee_target_info,
-        fee_base_info,
         vm_authority_info,
         vm_info,
         vm_memory_info,
@@ -109,8 +103,6 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
         base_vault_info,
         vm_omnibus_info,
         buyer_base_ata_info,
-        fee_target_info,
-        fee_base_info,
         token_program_info,
         args.in_amount,
         args.min_amount_out,
@@ -152,8 +144,6 @@ fn buy_common<'info>(
     base_vault_info: &AccountInfo<'info>,
     buyer_target_ata_info: &AccountInfo<'info>,
     buyer_base_ata_info: &AccountInfo<'info>,
-    fee_target_info: &AccountInfo<'info>,
-    _fee_base_info: &AccountInfo<'info>,
     token_program_info: &AccountInfo<'info>,
     in_amount_arg: u64,
     min_amount_out_arg: u64,
@@ -176,11 +166,6 @@ fn buy_common<'info>(
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
     let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
-
-    check_condition(
-        pool.fees_a.eq(fee_target_info.key), 
-        "Fees account does not match"
-    )?;
 
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,
@@ -210,38 +195,24 @@ fn buy_common<'info>(
     let tokens_left = to_numeric(tokens_left_raw, mint_a_decimals)?;
     let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
     let in_amount = to_numeric(in_amount_raw, mint_b_decimals)?;
-    let fee_rate = from_basis_points(pool.buy_fee)?;
 
     let mut total_tokens = curve.value_to_tokens(&supply, &in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
     if tokens_left.less_than(&total_tokens) {
         total_tokens = tokens_left
     }
-    let fee_amount = total_tokens.checked_mul(&fee_rate)
-        .ok_or(ProgramError::InvalidArgument)?;
-    let tokens_after_fee = total_tokens.checked_sub(&fee_amount)
-        .ok_or(ProgramError::InvalidArgument)?;
 
     solana_program::msg!("paying: ${}", in_amount.to_string());
     solana_program::msg!("for: {}", total_tokens.to_string());
-    solana_program::msg!("fee: {}", fee_amount.to_string());
-    solana_program::msg!("tokens_after_fee: {}", tokens_after_fee.to_string());
 
-    let fee_amount_raw = from_numeric(fee_amount.clone(), mint_a_decimals)?;
-    let tokens_after_fee_raw = from_numeric(tokens_after_fee.clone(), mint_a_decimals)?;
+    let total_tokens_raw = from_numeric(total_tokens.clone(), mint_a_decimals)?;
 
     check_condition(
-        tokens_after_fee_raw > 0,
+        total_tokens_raw > 0,
         "No tokens bought"
     )?;
-    if pool.buy_fee > 0 {
-        check_condition(
-            fee_amount_raw > 0,
-            "No fees generated"
-        )?;
-    }
     check_condition(
-        tokens_after_fee_raw >= min_amount_out_arg,
+        total_tokens_raw >= min_amount_out_arg,
         "Slippage exceeded"
     )?;
 
@@ -253,21 +224,5 @@ fn buy_common<'info>(
         in_amount_raw,
     )?;
 
-    if fee_amount_raw > 0 {
-        transfer_signed_with_bump(
-            target_vault_info,
-            target_vault_info,
-            fee_target_info,
-            token_program_info,
-            fee_amount_raw,
-            &[
-                TREASURY,
-                pool_info.key.as_ref(),
-                target_mint_info.key.as_ref()
-            ],
-            pool.vault_a_bump,
-        )?;
-    }
-
-    Ok(tokens_after_fee_raw)
+    Ok(total_tokens_raw)
 }

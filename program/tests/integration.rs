@@ -19,7 +19,6 @@ struct TestCurrency {
 }
 
 struct TestPool {
-    buy_fee: u16,
     sell_fee: u16,
 }
 
@@ -35,7 +34,6 @@ fn run_integration() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let buy_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
     let sell_fee = to_basis_points(&to_numeric(1, 2).unwrap()).unwrap();
 
     let currency = TestCurrency {
@@ -69,7 +67,6 @@ fn run_integration() {
     assert_eq!(account.mint_bump, mint_bump);
 
     let pool = TestPool {
-        buy_fee,
         sell_fee,
     };
 
@@ -77,19 +74,13 @@ fn run_integration() {
     let (vault_a_pda, vault_a_bump) = find_vault_pda(&pool_pda, &mint_pda);
     let (vault_b_pda, vault_b_bump) = find_vault_pda(&pool_pda, &usdc);
 
-    let fee_usdc_ata = create_ata(&mut svm, &payer, &usdc, &payer_pk);
-    let fee_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &payer_pk);
-
     let blockhash = svm.latest_blockhash();
     let ix = build_initialize_pool_ix(
         payer_pk,
         currency_pda,
         mint_pda,
         usdc,
-        pool.buy_fee,
         pool.sell_fee,
-        fee_mint_ata,
-        fee_usdc_ata,
     );
     let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
     let res = send_tx(&mut svm, tx);
@@ -104,15 +95,14 @@ fn run_integration() {
     assert_eq!(account.mint_b, usdc);
     assert_eq!(account.vault_a, vault_a_pda);
     assert_eq!(account.vault_b, vault_b_pda);
-    assert_eq!(account.fees_a, fee_mint_ata);
-    assert_eq!(account.fees_b, fee_usdc_ata);
-    assert_eq!(account.buy_fee, pool.buy_fee);
     assert_eq!(account.sell_fee, pool.sell_fee);
     assert_eq!(account.bump, pool_bump);
     assert_eq!(account.vault_a_bump, vault_a_bump);
     assert_eq!(account.vault_b_bump, vault_b_bump);
 
-    assert_eq!(get_ata_balance(&svm, &vault_a_pda), as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS));
+    let darksky_total_supply = as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS);
+
+    assert_eq!(get_ata_balance(&svm, &vault_a_pda), darksky_total_supply);
     assert_eq!(get_ata_balance(&svm, &vault_b_pda), 0);
 
     let blockhash = svm.latest_blockhash();
@@ -150,8 +140,6 @@ fn run_integration() {
         0,
         user_mint_ata,
         user_usdc_ata,
-        fee_mint_ata,
-        fee_usdc_ata,
     );
     let blockhash = svm.latest_blockhash();
     let tx = Transaction::new_signed_with_payer(&[buy_ix], Some(&user_pk), &[&user], blockhash);
@@ -161,13 +149,12 @@ fn run_integration() {
     let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
     let vault_a_balance = get_ata_balance(&svm, &vault_a_pda);
     let vault_b_balance = get_ata_balance(&svm, &vault_b_pda);
-    let fee_mint_balance = get_ata_balance(&svm, &fee_mint_ata);
     let user_usdc_after_buy = get_ata_balance(&svm, &user_usdc_ata);
 
-    assert!(user_mint_balance > 0, "User should have received some tokens");
-    assert!(vault_a_balance > 0, "Vault A should have been debited");
+    assert!(vault_a_balance < darksky_total_supply, "Vault A should have been debited");
+    assert!(user_mint_balance == darksky_total_supply - vault_a_balance, "User should have received some tokens");
     assert!(vault_b_balance > 0, "Vault B should have received funds");
-    assert!(fee_mint_balance == 0, "Fee in mint shouldn't have been collected");
+    assert!(mint_amt - user_usdc_after_buy - vault_b_balance == 0, "No USDC fees should have been burned");
 
     // SELL
     let sell_amount = as_token(25, darksky_decimals);
@@ -181,8 +168,6 @@ fn run_integration() {
         0,
         user_mint_ata,
         user_usdc_ata,
-        fee_mint_ata,
-        fee_usdc_ata,
     );
     let blockhash = svm.latest_blockhash();
     let tx = Transaction::new_signed_with_payer(&[sell_ix], Some(&user_pk), &[&user], blockhash);
@@ -191,11 +176,11 @@ fn run_integration() {
 
     let user_usdc_after_sell = get_ata_balance(&svm, &user_usdc_ata);
     let vault_a_after_sell = get_ata_balance(&svm, &vault_a_pda);
-    let fee_usdc_balance = get_ata_balance(&svm, &fee_usdc_ata);
+    let vault_b_after_sell = get_ata_balance(&svm, &vault_b_pda);
 
     assert!(user_usdc_after_sell > user_usdc_after_buy, "User should have received USDC from sale");
     assert!(vault_a_after_sell > vault_a_balance, "Vault A should have received tokens back");
-    assert!(fee_usdc_balance > 0, "USDC fee account should have received fee");
+    assert!(mint_amt - user_usdc_after_sell - vault_b_after_sell > 0, "USDC fee should have been burned");
 }
 
 #[test]
@@ -210,7 +195,6 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let buy_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
     let sell_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
 
     let currency = TestCurrency {
@@ -234,7 +218,6 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
     assert!(res.is_ok());
 
     let pool = TestPool {
-        buy_fee,
         sell_fee,
     };
 
@@ -242,19 +225,13 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
     let (vault_a_pda, _) = find_vault_pda(&pool_pda, &mint_pda);
     let (vault_b_pda, _) = find_vault_pda(&pool_pda, &usdc);
 
-    let fee_usdc_ata = create_ata(&mut svm, &payer, &usdc, &payer_pk);
-    let fee_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &payer_pk);
-
     let blockhash = svm.latest_blockhash();
     let ix = build_initialize_pool_ix(
         payer_pk,
         currency_pda,
         mint_pda,
         usdc,
-        pool.buy_fee,
         pool.sell_fee,
-        fee_mint_ata,
-        fee_usdc_ata,
     );
     let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
     let res = send_tx(&mut svm, tx);
@@ -287,8 +264,6 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
             0,
             user_mint_ata,
             user_usdc_ata,
-            fee_mint_ata,
-            fee_usdc_ata,
         );
         let blockhash = svm.latest_blockhash();
         let tx = Transaction::new_signed_with_payer(&[buy_ix], Some(&user_pk), &[&user], blockhash);
@@ -331,8 +306,6 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
             0,
             user_mint_ata,
             user_usdc_ata,
-            fee_mint_ata,
-            fee_usdc_ata,
         );
         let blockhash = svm.latest_blockhash();
         let tx = Transaction::new_signed_with_payer(&[sell_ix], Some(&user_pk), &[&user], blockhash);
@@ -371,7 +344,6 @@ fn run_buy_and_sell_simulation_random() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let buy_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
     let sell_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
 
     let currency = TestCurrency {
@@ -395,7 +367,6 @@ fn run_buy_and_sell_simulation_random() {
     assert!(res.is_ok());
 
     let pool = TestPool {
-        buy_fee,
         sell_fee,
     };
 
@@ -403,19 +374,13 @@ fn run_buy_and_sell_simulation_random() {
     let (vault_a_pda, _) = find_vault_pda(&pool_pda, &mint_pda);
     let (vault_b_pda, _) = find_vault_pda(&pool_pda, &usdc);
 
-    let fee_usdc_ata = create_ata(&mut svm, &payer, &usdc, &payer_pk);
-    let fee_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &payer_pk);
-
     let blockhash = svm.latest_blockhash();
     let ix = build_initialize_pool_ix(
         payer_pk,
         currency_pda,
         mint_pda,
         usdc,
-        pool.buy_fee,
         pool.sell_fee,
-        fee_mint_ata,
-        fee_usdc_ata,
     );
     let tx = Transaction::new_signed_with_payer(&[ix], Some(&payer_pk), &[&payer], blockhash);
     let res = send_tx(&mut svm, tx);
@@ -446,8 +411,6 @@ fn run_buy_and_sell_simulation_random() {
                 0,
                 user_mint_ata,
                 user_usdc_ata,
-                fee_mint_ata,
-                fee_usdc_ata,
             );
             let blockhash = svm.latest_blockhash();
             let tx = Transaction::new_signed_with_payer(&[buy_ix], Some(&user_pk), &[&user], blockhash);
@@ -465,8 +428,6 @@ fn run_buy_and_sell_simulation_random() {
                 0,
                 user_mint_ata,
                 user_usdc_ata,
-                fee_mint_ata,
-                fee_usdc_ata,
             );
             let blockhash = svm.latest_blockhash();
             let tx = Transaction::new_signed_with_payer(&[sell_ix], Some(&user_pk), &[&user], blockhash);

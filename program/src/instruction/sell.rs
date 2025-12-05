@@ -15,8 +15,6 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         base_vault_info,
         seller_target_ata_info,
         seller_base_ata_info,
-        fee_target_info,
-        fee_base_info,
         token_program_info,
     ] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
@@ -38,8 +36,6 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         base_vault_info,
         seller_target_ata_info,
         seller_base_ata_info,
-        fee_target_info,
-        fee_base_info,
         token_program_info,
         args.in_amount,
         args.min_amount_out,
@@ -76,8 +72,6 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
         target_vault_info,
         base_vault_info,
         seller_target_ata_info,
-        fee_target_info,
-        fee_base_info,
         vm_authority_info,
         vm_info,
         vm_memory_info,
@@ -109,8 +103,6 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
         base_vault_info,
         seller_target_ata_info,
         vm_omnibus_info,
-        fee_target_info,
-        fee_base_info,
         token_program_info,
         args.in_amount,
         args.min_amount_out,
@@ -152,8 +144,6 @@ fn sell_common<'info>(
     base_vault_info: &AccountInfo<'info>,
     seller_target_ata_info: &AccountInfo<'info>,
     seller_base_ata_info: &AccountInfo<'info>,
-    _fee_target_info: &AccountInfo<'info>,
-    fee_base_info: &AccountInfo<'info>,
     token_program_info: &AccountInfo<'info>,
     in_amount_arg: u64,
     min_amount_out_arg: u64,
@@ -162,6 +152,7 @@ fn sell_common<'info>(
     check_signer(seller_info)?;
     check_mut(pool_info)?;
     check_mut(currency_info)?;
+    check_mut(base_mint_info)?;
     check_mut(target_vault_info)?;
     check_mut(base_vault_info)?;
     check_mut(seller_target_ata_info)?;
@@ -176,11 +167,6 @@ fn sell_common<'info>(
         .assert(|t| t.mint().eq(target_mint_info.key))?;
 
     let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
-
-    check_condition(
-        pool.fees_b.eq(fee_base_info.key),
-        "Royalties base account does not match"
-    )?;
 
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,
@@ -217,9 +203,9 @@ fn sell_common<'info>(
         .ok_or(ProgramError::InvalidArgument)?;
 
     solana_program::msg!("selling: {}", in_amount.to_string());
-    solana_program::msg!("for: {}", total_value.to_string());
-    solana_program::msg!("fee: {}", fee_amount.to_string());
-    solana_program::msg!("value_after_fee: {}", value_after_fee.to_string());
+    solana_program::msg!("for: ${}", total_value.to_string());
+    solana_program::msg!("fee: ${}", fee_amount.to_string());
+    solana_program::msg!("value_after_fee: ${}", value_after_fee.to_string());
 
     let fee_amount_raw = from_numeric(fee_amount.clone(), mint_b_decimals)?;
     let value_after_fee_raw = from_numeric(value_after_fee.clone(), mint_b_decimals)?;
@@ -248,10 +234,10 @@ fn sell_common<'info>(
     )?;
 
     if fee_amount_raw > 0 {
-        transfer_signed_with_bump(
+        burn_signed_with_bump(
             base_vault_info,
+            base_mint_info,
             base_vault_info,
-            fee_base_info,
             token_program_info,
             fee_amount_raw,
             &[

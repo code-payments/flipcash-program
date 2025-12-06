@@ -180,6 +180,13 @@ fn sell_common<'info>(
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
+    let tokens_left_raw = target_vault_info.as_token_account()?.amount();
+    let supply_from_bonding = MAX_TOKEN_SUPPLY
+        .checked_mul(QUARKS_PER_TOKEN)
+        .ok_or(ProgramError::InvalidArgument)?
+        .checked_sub(tokens_left_raw)
+        .ok_or(ProgramError::InvalidArgument)?;
+
     let value_left_raw = base_vault_info.as_token_account()?.amount();
 
     let mut in_amount_raw = in_amount_arg;
@@ -187,12 +194,13 @@ fn sell_common<'info>(
         in_amount_raw = seller_target_ata_info.as_token_account()?.amount();
     }
 
-    let curve = ContinuousExponentialCurve::default();
-    let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
+    let curve = DiscreteExponentialCurve::default();
     let in_amount = to_numeric(in_amount_raw, mint_a_decimals)?;
+    let new_supply = to_numeric(supply_from_bonding, mint_a_decimals)?.checked_sub(&in_amount).unwrap();
+    let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
     let fee_rate = from_basis_points(pool.sell_fee)?;
 
-    let mut total_value = curve.tokens_to_value_from_current_value(&value_left, &in_amount)
+    let mut total_value = curve.tokens_to_value(&new_supply, &in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
     if value_left.less_than(&total_value) {
         total_value = value_left

@@ -131,6 +131,12 @@ pub fn to_basis_points(numeric: &UnsignedNumeric) -> Result<u16, ProgramError> {
     u16::try_from(bps).map_err(|_| ProgramError::InvalidArgument)
 }
 
+pub fn modulo(dividend: &UnsignedNumeric, divisor: &UnsignedNumeric) -> Option<UnsignedNumeric> {
+    let quotient = dividend.checked_div(divisor).unwrap().floor().unwrap();
+    let remainder = dividend.checked_sub(&divisor.checked_mul(&quotient).unwrap()).unwrap();
+    Some(remainder)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

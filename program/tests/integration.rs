@@ -129,7 +129,7 @@ fn run_integration() {
     assert_eq!(get_ata_balance(&svm, &user_usdc_ata), mint_amt);
 
     // BUY
-    let buy_amount = as_token(2306, usdc_decimals);
+    let buy_amount = as_token(10, usdc_decimals);
     let buy_ix = build_buy_tokens_ix(
         user_pk,
         pool_pda,
@@ -462,7 +462,7 @@ fn run_buy_and_sell_simulation_random() {
         println!("Max DSKY supply difference from expectation so far: {:?}", max_supply_difference);
 
         let current_supply = to_numeric(user_mint_balance, TOKEN_DECIMALS).unwrap();
-        let expected_locked_usdc = curve.tokens_to_value_from_current_supply(&zero_supply, &current_supply).unwrap();
+        let expected_locked_usdc = curve.tokens_to_value(&zero_supply, &current_supply).unwrap();
         let expected_locked_usdc_quarks = from_numeric(expected_locked_usdc, usdc_decimals).unwrap();
         if expected_locked_usdc_quarks > vault_usdc_balance {
             difference = expected_locked_usdc_quarks - vault_usdc_balance;

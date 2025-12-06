@@ -191,7 +191,7 @@ fn buy_common<'info>(
         .checked_sub(tokens_left_raw)
         .ok_or(ProgramError::InvalidArgument)?;
 
-    let curve = ContinuousExponentialCurve::default();
+    let curve = DiscreteExponentialCurve::default();
     let tokens_left = to_numeric(tokens_left_raw, mint_a_decimals)?;
     let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
     let in_amount = to_numeric(in_amount_raw, mint_b_decimals)?;

@@ -179,11 +179,6 @@ fn buy_common<'info>(
     let mint_a_decimals = target_mint_info.as_mint()?.decimals();
     let mint_b_decimals = base_mint_info.as_mint()?.decimals();
 
-    let mut in_amount_raw = in_amount_arg;
-    if in_amount_raw == 0 {
-        in_amount_raw = buyer_base_ata_info.as_token_account()?.amount();
-    }
-
     let tokens_left_raw = target_vault_info.as_token_account()?.amount();
     let supply_from_bonding = MAX_TOKEN_SUPPLY
         .checked_mul(QUARKS_PER_TOKEN)
@@ -191,28 +186,45 @@ fn buy_common<'info>(
         .checked_sub(tokens_left_raw)
         .ok_or(ProgramError::InvalidArgument)?;
 
+    let current_value_raw = base_vault_info.as_token_account()?.amount();
+
+    let mut in_amount_raw = in_amount_arg;
+    if in_amount_raw == 0 {
+        in_amount_raw = buyer_base_ata_info.as_token_account()?.amount();
+    }
+
     let curve = DiscreteExponentialCurve::default();
+
+    let zero = to_numeric(0, 0)?;
     let tokens_left = to_numeric(tokens_left_raw, mint_a_decimals)?;
     let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
     let in_amount = to_numeric(in_amount_raw, mint_b_decimals)?;
-
-    let mut total_tokens = curve.value_to_tokens(&supply, &in_amount)
+    let current_value = to_numeric(current_value_raw, mint_b_decimals)?;
+    let new_value = current_value
+        .checked_add(&in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
-    if tokens_left.less_than(&total_tokens) {
-        total_tokens = tokens_left
+
+    let new_supply = curve.value_to_tokens(&zero, &new_value)
+        .ok_or(ProgramError::InvalidArgument)?;
+
+    let mut tokens_bought = new_supply
+        .checked_sub(&supply)
+        .ok_or(ProgramError::InvalidArgument)?;
+    if tokens_bought.greater_than(&tokens_left) {
+        tokens_bought = tokens_left;
     }
 
     solana_program::msg!("paying: ${}", in_amount.to_string());
-    solana_program::msg!("for: {}", total_tokens.to_string());
+    solana_program::msg!("for: {}", tokens_bought.to_string());
 
-    let total_tokens_raw = from_numeric(total_tokens.clone(), mint_a_decimals)?;
+    let tokens_bought_raw = from_numeric(tokens_bought, mint_a_decimals)?;
 
     check_condition(
-        total_tokens_raw > 0,
+        tokens_bought_raw > 0,
         "No tokens bought"
     )?;
     check_condition(
-        total_tokens_raw >= min_amount_out_arg,
+        tokens_bought_raw >= min_amount_out_arg,
         "Slippage exceeded"
     )?;
 
@@ -224,5 +236,5 @@ fn buy_common<'info>(
         in_amount_raw,
     )?;
 
-    Ok(total_tokens_raw)
+    Ok(tokens_bought_raw)
 }

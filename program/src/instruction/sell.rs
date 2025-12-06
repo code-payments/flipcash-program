@@ -195,31 +195,42 @@ fn sell_common<'info>(
     }
 
     let curve = DiscreteExponentialCurve::default();
+
+    let zero = to_numeric(0, 0)?;
     let in_amount = to_numeric(in_amount_raw, mint_a_decimals)?;
-    let new_supply = to_numeric(supply_from_bonding, mint_a_decimals)?.checked_sub(&in_amount).unwrap();
+    let new_supply = to_numeric(supply_from_bonding, mint_a_decimals)?
+        .checked_sub(&in_amount)
+        .unwrap();
     let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
     let fee_rate = from_basis_points(pool.sell_fee)?;
 
-    let mut total_value = curve.tokens_to_value(&new_supply, &in_amount)
+    let new_value = curve.tokens_to_value(&zero, &new_supply)
         .ok_or(ProgramError::InvalidArgument)?;
-    if value_left.less_than(&total_value) {
-        total_value = value_left
+
+    let mut total_sell_value = value_left
+        .checked_sub(&new_value)
+        .ok_or(ProgramError::InvalidArgument)?;
+    if total_sell_value.greater_than(&value_left) {
+        total_sell_value = value_left
     }
-    let fee_amount = total_value.checked_mul(&fee_rate)
+
+    let fee_amount = total_sell_value
+        .checked_mul(&fee_rate)
         .ok_or(ProgramError::InvalidArgument)?;
-    let value_after_fee = total_value.checked_sub(&fee_amount)
+    let sell_value_after_fee = total_sell_value
+        .checked_sub(&fee_amount)
         .ok_or(ProgramError::InvalidArgument)?;
 
     solana_program::msg!("selling: {}", in_amount.to_string());
-    solana_program::msg!("for: ${}", total_value.to_string());
+    solana_program::msg!("for: ${}", total_sell_value.to_string());
     solana_program::msg!("fee: ${}", fee_amount.to_string());
-    solana_program::msg!("value_after_fee: ${}", value_after_fee.to_string());
+    solana_program::msg!("value_after_fee: ${}", sell_value_after_fee.to_string());
 
-    let fee_amount_raw = from_numeric(fee_amount.clone(), mint_b_decimals)?;
-    let value_after_fee_raw = from_numeric(value_after_fee.clone(), mint_b_decimals)?;
+    let fee_amount_raw = from_numeric(fee_amount, mint_b_decimals)?;
+    let sell_value_after_fee_raw = from_numeric(sell_value_after_fee, mint_b_decimals)?;
 
     check_condition(
-        value_after_fee_raw > 0,
+        sell_value_after_fee_raw > 0,
         "No value received"
     )?;
     if pool.sell_fee > 0 {
@@ -229,7 +240,7 @@ fn sell_common<'info>(
         )?;
     }
     check_condition(
-        value_after_fee_raw >= min_amount_out_arg,
+        sell_value_after_fee_raw >= min_amount_out_arg,
         "Slippage exceeded"
     )?;
 
@@ -257,5 +268,5 @@ fn sell_common<'info>(
         )?;
     }
 
-    Ok(value_after_fee_raw)
+    Ok(sell_value_after_fee_raw)
 }

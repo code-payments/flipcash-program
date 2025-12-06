@@ -1,7 +1,6 @@
 use brine_fp::UnsignedNumeric;
 use crate::consts::*;
-use crate::discrete_pricing_table::*;
-use crate::utils::*;
+use crate::table::*;
 
 #[derive(Debug, Clone)]
 pub struct ContinuousExponentialCurve {
@@ -102,6 +101,7 @@ impl DiscreteExponentialCurve {
         Some(UnsignedNumeric::from_scaled_u128(price))
     }
 
+    // todo: validate implementation
     pub fn tokens_to_value(
         &self,
         current_supply: &UnsignedNumeric,
@@ -114,51 +114,58 @@ impl DiscreteExponentialCurve {
         }
 
         let step_size = UnsignedNumeric::new(DISCRETE_PRICING_STEP_SIZE).unwrap();
+        let end_supply = current_supply.checked_add(tokens)?;
 
-        let mut remaining_tokens = tokens.clone();
-        let mut new_current_supply = current_supply.clone();
-        let mut total_cost = UnsignedNumeric::zero();
+        let start_step = current_supply
+            .checked_div(&step_size)?
+            .floor()?
+            .to_imprecise()? as usize;
+        let end_step = end_supply
+            .checked_div(&step_size)?
+            .floor()?
+            .to_imprecise()? as usize;
 
-        while remaining_tokens.greater_than(&zero) {
-            let step_index = new_current_supply.
-                checked_div(&step_size).
-                unwrap().
-                floor().
-                unwrap().
-                to_imprecise()
-                .unwrap() as usize;
-            if step_index >= DISCRETE_PRICING_TABLE.len() {
-                return None;
-            }
-
-            let tokens_in_current_step = step_size.checked_sub(
-                &modulo(&new_current_supply, &step_size).unwrap()
-            ).unwrap();
-
-            let mut tokens_to_buy = remaining_tokens.clone();
-            if tokens_to_buy.greater_than(&tokens_in_current_step) {
-                tokens_to_buy = tokens_in_current_step;
-            }
-            if tokens_to_buy.eq(&zero) {
-                break;
-            }
-
-            let price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[step_index]);
-            let step_cost = tokens_to_buy.checked_mul(&price).unwrap();
-
-            total_cost = total_cost.checked_add(&step_cost).unwrap();
-
-            if tokens_to_buy.greater_than(&remaining_tokens) {
-                break;
-            }
-
-            remaining_tokens = remaining_tokens.checked_sub(&tokens_to_buy).unwrap();
-            new_current_supply = new_current_supply.checked_add(&tokens_to_buy).unwrap();
+        if end_step >= DISCRETE_PRICING_TABLE.len() {
+            return None;
         }
 
-        Some(total_cost)
+        // Calculate partial tokens in start step (from current_supply to next step boundary)
+        let start_step_boundary = UnsignedNumeric::new((start_step as u128 + 1) * DISCRETE_PRICING_STEP_SIZE)?;
+        let tokens_in_start_step = if start_step_boundary.greater_than(&end_supply) {
+            // All tokens are within the same step
+            tokens.clone()
+        } else {
+            start_step_boundary.checked_sub(current_supply)?
+        };
+
+        // Calculate partial tokens in end step (from end step boundary to end_supply)
+        let end_step_boundary = UnsignedNumeric::new(end_step as u128 * DISCRETE_PRICING_STEP_SIZE)?;
+        let tokens_in_end_step = end_supply.checked_sub(&end_step_boundary)?;
+
+        // Cost for partial start step
+        let start_price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[start_step]);
+        let start_cost = tokens_in_start_step.checked_mul(&start_price)?;
+
+        // If start and end are in the same step, we're done
+        if start_step == end_step {
+            return Some(start_cost);
+        }
+
+        // Cost for complete steps between start_step+1 and end_step-1 (inclusive)
+        // Use cumulative table: cumulative[end_step] - cumulative[start_step + 1]
+        let cumulative_start = UnsignedNumeric::from_scaled_u128(DISCRETE_CUMULATIVE_VALUE_TABLE[start_step + 1]);
+        let cumulative_end = UnsignedNumeric::from_scaled_u128(DISCRETE_CUMULATIVE_VALUE_TABLE[end_step]);
+        let middle_cost = cumulative_end.checked_sub(&cumulative_start)?;
+
+        // Cost for partial end step
+        let end_price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[end_step]);
+        let end_cost = tokens_in_end_step.checked_mul(&end_price)?;
+
+        // Total cost
+        start_cost.checked_add(&middle_cost)?.checked_add(&end_cost)
     }
 
+    // todo: validate implementation
     pub fn value_to_tokens(
         &self,
         current_supply: &UnsignedNumeric,
@@ -172,58 +179,75 @@ impl DiscreteExponentialCurve {
 
         let step_size = UnsignedNumeric::new(DISCRETE_PRICING_STEP_SIZE).unwrap();
 
-        let mut remaining_value = value.clone();
-        let mut new_current_supply = current_supply.clone();
-        let mut total_tokens = UnsignedNumeric::zero();
+        // Get current step index and position within step
+        let start_step = current_supply
+            .checked_div(&step_size)?
+            .floor()?
+            .to_imprecise()? as usize;
 
-        while !remaining_value.value.is_zero() {
-           let step_index = new_current_supply.
-                checked_div(&step_size).
-                unwrap().
-                floor().
-                unwrap().
-                to_imprecise()
-                .unwrap() as usize;
-            if step_index >= DISCRETE_PRICING_TABLE.len()-1 {
-                return None;
-            }
+        if start_step >= DISCRETE_PRICING_TABLE.len() - 1 {
+            return None;
+        }
 
-            let tokens_in_current_step = step_size.checked_sub(
-                &modulo(&new_current_supply, &step_size).unwrap()
-            ).unwrap();
+        // Calculate cost to complete the current partial step
+        let start_step_boundary = UnsignedNumeric::new((start_step as u128 + 1) * DISCRETE_PRICING_STEP_SIZE)?;
+        let tokens_in_start_step = start_step_boundary.checked_sub(current_supply)?;
+        let start_price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[start_step]);
+        let cost_to_complete_start_step = tokens_in_start_step.checked_mul(&start_price)?;
 
-            let price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[step_index]);
+        // If we can't even complete the start step, just divide by price
+        if value.less_than(&cost_to_complete_start_step) {
+            return value.checked_div(&start_price)?.floor();
+        }
 
-            let step_total_cost = tokens_in_current_step.checked_mul(&price)?;
+        // We can at least complete the start step
+        let remaining_after_start = value.checked_sub(&cost_to_complete_start_step)?;
 
-            if remaining_value.greater_than_or_equal(&step_total_cost) {
-                total_tokens = total_tokens.checked_add(&tokens_in_current_step).unwrap();
-                remaining_value = remaining_value.checked_sub(&step_total_cost)?;
-                new_current_supply = new_current_supply.checked_add(&tokens_in_current_step).unwrap();
+        // Calculate the cumulative value at start_step + 1 (where we'll be after completing start step)
+        let base_cumulative = UnsignedNumeric::from_scaled_u128(DISCRETE_CUMULATIVE_VALUE_TABLE[start_step + 1]);
+
+        // Target cumulative = base_cumulative + remaining_value
+        let target_cumulative = base_cumulative.checked_add(&remaining_after_start)?;
+
+        // Binary search for the step where cumulative value exceeds or equals target
+        let mut low = start_step + 1;
+        let mut high = DISCRETE_CUMULATIVE_VALUE_TABLE.len() - 1;
+
+        while low < high {
+            let mid = (low + high + 1) / 2;
+            let mid_cumulative = UnsignedNumeric::from_scaled_u128(DISCRETE_CUMULATIVE_VALUE_TABLE[mid]);
+
+            if mid_cumulative.less_than_or_equal(&target_cumulative) {
+                low = mid;
             } else {
-                let tokens_affordable = remaining_value.checked_div(&price).unwrap();
-
-                let mut tokens_to_buy = tokens_affordable;
-                if tokens_to_buy.greater_than(&tokens_in_current_step) {
-                    tokens_to_buy = tokens_in_current_step
-                }
-                if tokens_to_buy.eq(&zero) {
-                    break;
-                }
-
-                total_tokens = total_tokens.checked_add(&tokens_to_buy).unwrap();
-
-                let actual_cost = tokens_to_buy.checked_mul(&price).unwrap();
-                if actual_cost.greater_than(&remaining_value) {
-                    break
-                }
-
-                remaining_value = remaining_value.checked_sub(&actual_cost)?;
-                new_current_supply = new_current_supply.checked_add(&tokens_to_buy).unwrap();
+                high = mid - 1;
             }
         }
 
-        Some(total_tokens)
+        // low is now the last step where cumulative <= target
+        let end_step = low;
+
+        if end_step >= DISCRETE_PRICING_TABLE.len() {
+            return None;
+        }
+
+        // Calculate tokens from complete steps
+        let end_step_supply = UnsignedNumeric::new(end_step as u128 * DISCRETE_PRICING_STEP_SIZE)?;
+        let tokens_from_complete_steps = end_step_supply.checked_sub(&start_step_boundary)?;
+
+        // Calculate remaining value after complete steps
+        let cumulative_at_end_step = UnsignedNumeric::from_scaled_u128(DISCRETE_CUMULATIVE_VALUE_TABLE[end_step]);
+        let value_used_for_complete_steps = cumulative_at_end_step.checked_sub(&base_cumulative)?;
+        let remaining_value = remaining_after_start.checked_sub(&value_used_for_complete_steps)?;
+
+        // Buy partial tokens in end step with remaining value
+        let end_price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[end_step]);
+        let tokens_in_end_step = remaining_value.checked_div(&end_price)?;
+
+        // Total tokens
+        tokens_in_start_step
+            .checked_add(&tokens_from_complete_steps)?
+            .checked_add(&tokens_in_end_step)
     }
 }
 
@@ -350,10 +374,9 @@ mod tests {
         println!("supply,spot_price");
 
         let zero = UnsignedNumeric::zero();
-        let step_size = UnsignedNumeric::new(100).unwrap(); // 100 tokens per step
+        let step_size = UnsignedNumeric::new(100).unwrap();
         let mut supply = zero.clone();
 
-        // 0 to 21,000,000 in steps of 100 = 210,001 rows (including 0)
         for _ in 0..=210_000 {
             let spot_price = curve.spot_price_at_supply(&supply).unwrap();
 
@@ -369,10 +392,8 @@ mod tests {
 
     #[test]
     fn test_discrete_pricing_table_matches_continuous_curve() {
-        use crate::discrete_pricing_table::DISCRETE_PRICING_TABLE;
-
         let curve = ContinuousExponentialCurve::default();
-        let step_size = UnsignedNumeric::new(100).unwrap(); // 100 tokens per step
+        let step_size = UnsignedNumeric::new(DISCRETE_PRICING_STEP_SIZE).unwrap();
 
         for (index, &table_price) in DISCRETE_PRICING_TABLE.iter().enumerate() {
             // Calculate supply for this index: supply = index * 100
@@ -386,12 +407,59 @@ mod tests {
                 .expect(&format!("Failed to calculate spot price at supply {}", index * 100));
 
             // Convert table price to UnsignedNumeric for comparison
-            let table_price_numeric = UnsignedNumeric::from_scaled_u128(table_price);
+            let table_price = UnsignedNumeric::from_scaled_u128(table_price);
 
             // Assert they match within tolerance
             assert_approx_eq(
                 &curve_price,
-                &table_price_numeric,
+                &table_price,
+                0,
+            );
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn export_discrete_cumulative_value_csv() {
+        // CSV header
+        println!("supply,spot_price");
+
+        let step_size = UnsignedNumeric::new(DISCRETE_PRICING_STEP_SIZE).unwrap();
+        let mut cumulative = UnsignedNumeric::zero();
+
+        for i in 0..=DISCRETE_PRICING_TABLE.len()-1 {
+            println!("{},{}", i * 100, cumulative.value.to_string());
+
+            if i < DISCRETE_PRICING_TABLE.len() {
+                let price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[i]);
+                let step_cost = price.checked_mul(&step_size).unwrap();
+                cumulative = cumulative.checked_add(&step_cost).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn test_discrete_cumulative_table_matches_discrete_curve() {
+        let curve = DiscreteExponentialCurve::default();
+        let step_size = UnsignedNumeric::new(DISCRETE_PRICING_STEP_SIZE).unwrap();
+
+        for (index, &cumulative_value) in DISCRETE_CUMULATIVE_VALUE_TABLE.iter().enumerate() {
+            // Calculate supply for this index: supply = index * 100
+            let supply = UnsignedNumeric::new(index as u128)
+                .unwrap()
+                .checked_mul(&step_size)
+                .unwrap();
+
+            // Calculate expected value from discrete curve
+            let expected_value = curve.tokens_to_value(&UnsignedNumeric::zero(), &supply).unwrap();
+
+            // Convert table value to UnsignedNumeric for comparison
+            let actual_value = UnsignedNumeric::from_scaled_u128(cumulative_value);
+
+            // Assert they match within tolerance
+            assert_approx_eq(
+                &expected_value,
+                &actual_value,
                 0,
             );
         }
@@ -421,6 +489,7 @@ mod tests {
         assert_eq!(price_100.to_string(), expected_100.to_string());
     }
 
+    // todo: continue expanding on this
     #[test]
     fn test_discrete_tokens_to_value() {
         let curve = DiscreteExponentialCurve::default();
@@ -465,27 +534,40 @@ mod tests {
         assert_eq!(cost_150.to_string(), expected_150.to_string());
     }
 
+    // todo: continue expanding on this
     #[test]
     fn test_discrete_value_to_tokens() {
         let curve = DiscreteExponentialCurve::default();
+
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+        let price_1 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1]);
+
+        let tokens_50 = &UnsignedNumeric::new(50).unwrap();
+        let tokens_100 = &UnsignedNumeric::new(100).unwrap();
+        let tokens_150 = &UnsignedNumeric::new(150).unwrap();
 
         // Test with 0 value
         let supply = UnsignedNumeric::new(0).unwrap();
         let value_0 = UnsignedNumeric::zero();
         let tokens = curve.value_to_tokens(&supply, &value_0).unwrap();
-        assert_eq!(tokens.to_string(), UnsignedNumeric::zero().to_string());
-
-        // Test buying exactly 100 tokens worth at price[0]
-        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
-        let tokens_100 = UnsignedNumeric::new(100).unwrap();
-        let value_for_100 = price_0.checked_mul(&tokens_100).unwrap();
-        let tokens_result = curve.value_to_tokens(&supply, &value_for_100).unwrap();
-        assert_eq!(tokens_result.to_string(), tokens_100.to_string());
+        assert_approx_eq(&tokens,  &UnsignedNumeric::zero(), 0);
 
         // Test buying approximately 50 tokens at price[0]
-        let value_for_50 = price_0.checked_mul(&UnsignedNumeric::new(50).unwrap()).unwrap();
+        let value_for_50 = price_0.checked_mul(tokens_50).unwrap();
         let tokens_result_50 = curve.value_to_tokens(&supply, &value_for_50).unwrap();
-        assert_eq!(tokens_result_50.to_string(), UnsignedNumeric::new(50).unwrap().to_string());
+        assert_approx_eq(&tokens_result_50,  &tokens_50, 0);
+
+        // Test buying exactly 100 tokens worth at price[0]
+        let value_for_100 = price_0.checked_mul(&tokens_100).unwrap();
+        let tokens_result_100 = curve.value_to_tokens(&supply, &value_for_100).unwrap();
+        assert_approx_eq(&tokens_result_100,  &tokens_100, 50);
+
+        // Test buying exactly 100 tokens worth at price[0] and 50 tokens at price[1]
+        let value_for_first_100 = price_0.checked_mul(&tokens_100).unwrap();
+        let value_for_next_50 = price_1.checked_mul(&tokens_50).unwrap();
+        let value_for_150 =value_for_first_100.checked_add(&value_for_next_50) .unwrap();
+        let tokens_result_150 = curve.value_to_tokens(&supply, &value_for_150).unwrap();
+        assert_approx_eq(&tokens_result_150,  &tokens_150, 50);
     }
 
     #[test]

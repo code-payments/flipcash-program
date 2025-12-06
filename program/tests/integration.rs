@@ -129,7 +129,7 @@ fn run_integration() {
     assert_eq!(get_ata_balance(&svm, &user_usdc_ata), mint_amt);
 
     // BUY
-    let buy_amount = as_token(10, usdc_decimals);
+    let buy_amount = as_token(2306, usdc_decimals);
     let buy_ix = build_buy_tokens_ix(
         user_pk,
         pool_pda,
@@ -243,7 +243,7 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
     let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
     let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
 
-    let mint_amt = as_token(1_140_023_003_584, usdc_decimals);
+    let mint_amt = as_token(1_139_973_004_316, usdc_decimals);
     let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
     assert!(res.is_ok());
 
@@ -289,7 +289,7 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
     assert!(vault_a_balance == 0, "Vault A should have no DSKY");
     assert!(vault_b_balance == mint_amt, "Vault B should have all USDC");
 
-    let iterations = 10_000;
+    let iterations = 12_345;
     let sell_amount_per_iteration = get_ata_balance(&svm, &user_mint_ata) / iterations;
     for i in 0..iterations {
         let mut sell_amount = sell_amount_per_iteration - i;
@@ -392,7 +392,7 @@ fn run_buy_and_sell_simulation_random() {
     let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
     let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
 
-    let mint_amt = as_token(1_140_023_003_584, usdc_decimals);
+    let mint_amt = as_token(1_139_973_004_315, usdc_decimals);
     let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
     assert!(res.is_ok());
 
@@ -444,8 +444,8 @@ fn run_buy_and_sell_simulation_random() {
         println!("User USDC balance: {:?}", user_usdc_balance);
         println!("Vault USDC balance: {:?}", vault_usdc_balance);
 
-        let mut difference = 0;
-        let curve = ContinuousExponentialCurve::default();
+        let mut difference;
+        let curve = DiscreteExponentialCurve::default();
         let zero_supply = to_numeric(0, TOKEN_DECIMALS).unwrap();
         let usdc_buy_amount = to_numeric(vault_usdc_balance, usdc_decimals).unwrap();
         let expected_token_supply = curve.value_to_tokens(&zero_supply, &usdc_buy_amount).unwrap();
@@ -477,7 +477,8 @@ fn run_buy_and_sell_simulation_random() {
     }
 
     println!("Max DSKY supply difference from expectation: {:?}", max_supply_difference);
-    println!("Max USDC locked difference from expectation: {:?}", max_usdc_locked_difference);
+    println!("Max USDC locked difference from expectation: {:?}", max_usdc_locked_difference); 
+
     assert!(max_supply_difference < 500_000, "Significant imprecision detected");
-    assert!(max_usdc_locked_difference < 500, "Significant imprecision detected");
+    assert!(max_usdc_locked_difference < 10, "Significant imprecision detected");
 }

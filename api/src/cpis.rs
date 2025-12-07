@@ -1,7 +1,5 @@
 use solana_program::{
     program_pack::Pack,
-    system_instruction, 
-    rent::Rent, 
 };
 use steel::*;
 
@@ -22,25 +20,15 @@ pub fn create_token_account<'info>(
         return Err(ProgramError::AccountAlreadyInitialized);
     }
 
-    // Calculate minimum balance for rent exemption
-    let rent = Rent::get()?;
-    let required_lamports = rent.minimum_balance(spl_token::state::Account::LEN);
-
-    // Create the account with system program
-    solana_program::program::invoke_signed(
-        &system_instruction::create_account(
-            payer.key,
-            target.key,
-            required_lamports,
-            spl_token::state::Account::LEN as u64,
-            &spl_token::id(),
-        ),
-        &[
-            payer.clone(),
-            target.clone(),
-            system_program.clone(),
-        ],
-        &[seeds],
+    // Safely create the account with system program
+    steel::allocate_account_with_bump(
+        target,
+        system_program,
+        payer,
+        spl_token::state::Account::LEN,
+        &spl_token::id(),
+        &seeds[0..seeds.len()-1],
+        seeds[seeds.len()-1][0],
     )?;
 
     // Initialize the PDA.
@@ -76,25 +64,15 @@ pub fn create_mint_account<'info>(
         return Err(ProgramError::AccountAlreadyInitialized);
     }
 
-    // Calculate minimum balance for rent exemption
-    let rent = Rent::get()?;
-    let required_lamports = rent.minimum_balance(spl_token::state::Mint::LEN);
-
-    // Create the account with system program
-    solana_program::program::invoke_signed(
-        &system_instruction::create_account(
-            payer.key,
-            mint.key,
-            required_lamports,
-            spl_token::state::Mint::LEN as u64,
-            &spl_token::id(),
-        ),
-        &[
-            payer.clone(),
-            mint.clone(),
-            system_program.clone(),
-        ],
-        &[seeds],
+    // Safely create the account with system program
+    steel::allocate_account_with_bump(
+        mint,
+        system_program,
+        payer,
+        spl_token::state::Mint::LEN,
+        &spl_token::id(),
+        &seeds[0..seeds.len()-1],
+        seeds[seeds.len()-1][0],
     )?;
 
     // Initialize the mint

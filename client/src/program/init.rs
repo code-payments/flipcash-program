@@ -33,7 +33,7 @@ pub async fn initialize(
     let (mint_pda, _) = find_mint_pda(&authority, &name, &seed);
     let (currency_pda, _) = find_currency_pda(&mint_pda);
 
-    let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(250_000);
+    let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(200_000);
     let create_currency_ix = build_initialize_currency_ix(
         authority,
         name,

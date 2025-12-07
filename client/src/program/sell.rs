@@ -40,7 +40,7 @@ pub async fn sell(
     let in_amount = (amount * 10f64.powi(TOKEN_DECIMALS as i32)) as u64;
     let min_amount_out = 0; // Allow any output amount for simplicity
 
-    let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(250_000);
+    let compute_budget_ix = ComputeBudgetInstruction::set_compute_unit_limit(100_000);
     let sell_ix = build_sell_tokens_ix(
         seller,
         pool_pda,

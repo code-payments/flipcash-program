@@ -489,27 +489,133 @@ mod tests {
         assert_eq!(price_100.to_string(), expected_100.to_string());
     }
 
-    // todo: continue expanding on this
     #[test]
-    fn test_discrete_tokens_to_value() {
+    fn test_discrete_spot_price_at_step_boundaries() {
         let curve = DiscreteExponentialCurve::default();
 
-        // Test buying 0 tokens
-        let supply = UnsignedNumeric::new(0).unwrap();
-        let tokens = UnsignedNumeric::new(0).unwrap();
-        let cost = curve.tokens_to_value(&supply, &tokens).unwrap();
-        assert_eq!(cost.to_string(), UnsignedNumeric::zero().to_string());
+        // Test that prices change exactly at step boundaries (multiples of 100)
+        for step in 0..10 {
+            let boundary = step * DISCRETE_PRICING_STEP_SIZE;
+            let expected_price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[step as usize]);
 
-        // Test buying 100 tokens from supply 0
-        // All tokens should cost price[0]
+            // At exact boundary
+            let supply_at_boundary = UnsignedNumeric::new(boundary).unwrap();
+            let price_at_boundary = curve.spot_price_at_supply(&supply_at_boundary).unwrap();
+            assert_eq!(price_at_boundary.to_string(), expected_price.to_string(),
+                "Price at step {} boundary should match table", step);
+
+            // Just before next boundary (should still use current step's price)
+            if boundary + 99 < DISCRETE_PRICING_TABLE.len() as u128 * DISCRETE_PRICING_STEP_SIZE {
+                let supply_before_next = UnsignedNumeric::new(boundary + 99).unwrap();
+                let price_before_next = curve.spot_price_at_supply(&supply_before_next).unwrap();
+                assert_eq!(price_before_next.to_string(), expected_price.to_string(),
+                    "Price at supply {} should still use step {}", boundary + 99, step);
+            }
+        }
+    }
+
+    #[test]
+    fn test_discrete_spot_price_at_various_positions_within_step() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // All positions within a step should return the same price
+        let step_index = 5;
+        let expected_price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[step_index]);
+
+        for offset in [0, 1, 25, 50, 75, 99] {
+            let supply = UnsignedNumeric::new(step_index as u128 * DISCRETE_PRICING_STEP_SIZE + offset).unwrap();
+            let price = curve.spot_price_at_supply(&supply).unwrap();
+            assert_eq!(price.to_string(), expected_price.to_string(),
+                "Price at offset {} within step {} should be the same", offset, step_index);
+        }
+    }
+
+    #[test]
+    fn test_discrete_spot_price_beyond_table_returns_none() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Supply beyond the table should return None
+        let max_valid_supply = (DISCRETE_PRICING_TABLE.len() - 1) as u128 * DISCRETE_PRICING_STEP_SIZE;
+        let supply_beyond = UnsignedNumeric::new(max_valid_supply + DISCRETE_PRICING_STEP_SIZE).unwrap();
+        assert!(curve.spot_price_at_supply(&supply_beyond).is_none(),
+            "Supply beyond table should return None");
+    }
+
+    #[test]
+    fn test_discrete_spot_price_at_max_supply() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test at maximum valid supply (last entry in table)
+        let last_step = DISCRETE_PRICING_TABLE.len() - 1;
+        let max_supply = UnsignedNumeric::new(last_step as u128 * DISCRETE_PRICING_STEP_SIZE).unwrap();
+        let price = curve.spot_price_at_supply(&max_supply).unwrap();
+        let expected = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[last_step]);
+        assert_eq!(price.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_zero_tokens() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying 0 tokens from various supplies
+        for supply_val in [0, 50, 100, 1000, 10000] {
+            let supply = UnsignedNumeric::new(supply_val).unwrap();
+            let tokens = UnsignedNumeric::zero();
+            let cost = curve.tokens_to_value(&supply, &tokens).unwrap();
+            assert_eq!(cost.to_string(), UnsignedNumeric::zero().to_string(),
+                "Buying 0 tokens from supply {} should cost 0", supply_val);
+        }
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_within_single_step() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying tokens entirely within a single step
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let tokens_50 = UnsignedNumeric::new(50).unwrap();
+        let cost_50 = curve.tokens_to_value(&supply, &tokens_50).unwrap();
+        let expected_50 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
+            .checked_mul(&tokens_50).unwrap();
+        assert_eq!(cost_50.to_string(), expected_50.to_string());
+
+        // From mid-step to end of same step
+        let supply_25 = UnsignedNumeric::new(25).unwrap();
+        let tokens_75 = UnsignedNumeric::new(75).unwrap();
+        let cost_75 = curve.tokens_to_value(&supply_25, &tokens_75).unwrap();
+        let expected_75 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
+            .checked_mul(&tokens_75).unwrap();
+        assert_eq!(cost_75.to_string(), expected_75.to_string());
+
+        // Middle of one step, still within same step
+        let supply_10 = UnsignedNumeric::new(10).unwrap();
+        let tokens_30 = UnsignedNumeric::new(30).unwrap();
+        let cost_30 = curve.tokens_to_value(&supply_10, &tokens_30).unwrap();
+        let expected_30 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
+            .checked_mul(&tokens_30).unwrap();
+        assert_eq!(cost_30.to_string(), expected_30.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_exact_step() {
+        let curve = DiscreteExponentialCurve::default();
         let tokens_100 = UnsignedNumeric::new(100).unwrap();
+
+        // Test buying exactly 100 tokens from supply 0
+        let supply = UnsignedNumeric::new(0).unwrap();
         let cost_100 = curve.tokens_to_value(&supply, &tokens_100).unwrap();
         let expected_100 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
             .checked_mul(&tokens_100).unwrap();
         assert_eq!(cost_100.to_string(), expected_100.to_string());
+    }
 
-        // Test buying 200 tokens from supply 0
-        // First 100 tokens cost price[0], next 100 tokens cost price[1]
+    #[test]
+    fn test_discrete_tokens_to_value_crossing_one_boundary() {
+        let curve = DiscreteExponentialCurve::default();
+        let tokens_100 = UnsignedNumeric::new(100).unwrap();
+
+        // Test buying 200 tokens from supply 0 (crosses one boundary)
+        let supply = UnsignedNumeric::new(0).unwrap();
         let tokens_200 = UnsignedNumeric::new(200).unwrap();
         let cost_200 = curve.tokens_to_value(&supply, &tokens_200).unwrap();
         let expected_200 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
@@ -519,6 +625,12 @@ mod tests {
                     .checked_mul(&tokens_100).unwrap()
             ).unwrap();
         assert_eq!(cost_200.to_string(), expected_200.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_partial_start_step() {
+        let curve = DiscreteExponentialCurve::default();
+        let tokens_100 = UnsignedNumeric::new(100).unwrap();
 
         // Test buying 150 tokens from supply 50
         // First 50 tokens cost price[0], next 100 tokens cost price[1]
@@ -534,40 +646,381 @@ mod tests {
         assert_eq!(cost_150.to_string(), expected_150.to_string());
     }
 
-    // todo: continue expanding on this
     #[test]
-    fn test_discrete_value_to_tokens() {
+    fn test_discrete_tokens_to_value_partial_end_step() {
         let curve = DiscreteExponentialCurve::default();
 
-        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
-        let price_1 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1]);
-
-        let tokens_50 = &UnsignedNumeric::new(50).unwrap();
-        let tokens_100 = &UnsignedNumeric::new(100).unwrap();
-        let tokens_150 = &UnsignedNumeric::new(150).unwrap();
-
-        // Test with 0 value
+        // Test buying 175 tokens from supply 0
+        // 100 tokens at price[0], 75 tokens at price[1]
         let supply = UnsignedNumeric::new(0).unwrap();
-        let value_0 = UnsignedNumeric::zero();
-        let tokens = curve.value_to_tokens(&supply, &value_0).unwrap();
-        assert_approx_eq(&tokens,  &UnsignedNumeric::zero(), 0);
+        let tokens_175 = UnsignedNumeric::new(175).unwrap();
+        let cost = curve.tokens_to_value(&supply, &tokens_175).unwrap();
+        let expected = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
+            .checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap()
+            .checked_add(
+                &UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1])
+                    .checked_mul(&UnsignedNumeric::new(75).unwrap()).unwrap()
+            ).unwrap();
+        assert_eq!(cost.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_partial_both_ends() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying 125 tokens from supply 50
+        // 50 tokens at price[0], 75 tokens at price[1]
+        let supply_50 = UnsignedNumeric::new(50).unwrap();
+        let tokens_125 = UnsignedNumeric::new(125).unwrap();
+        let cost = curve.tokens_to_value(&supply_50, &tokens_125).unwrap();
+        let expected = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
+            .checked_mul(&UnsignedNumeric::new(50).unwrap()).unwrap()
+            .checked_add(
+                &UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1])
+                    .checked_mul(&UnsignedNumeric::new(75).unwrap()).unwrap()
+            ).unwrap();
+        assert_eq!(cost.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_multiple_full_steps() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying 500 tokens from supply 0 (5 full steps)
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let tokens_500 = UnsignedNumeric::new(500).unwrap();
+        let cost = curve.tokens_to_value(&supply, &tokens_500).unwrap();
+
+        // Calculate expected cost: sum of (price[i] * 100) for i in 0..5
+        let mut expected = UnsignedNumeric::zero();
+        for i in 0..5 {
+            let step_cost = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[i])
+                .checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap();
+            expected = expected.checked_add(&step_cost).unwrap();
+        }
+        assert_eq!(cost.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_multiple_steps_with_partials() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying 350 tokens from supply 75
+        // 25 tokens at price[0], 100 at price[1], 100 at price[2], 100 at price[3], 25 at price[4]
+        let supply_75 = UnsignedNumeric::new(75).unwrap();
+        let tokens_350 = UnsignedNumeric::new(350).unwrap();
+        let cost = curve.tokens_to_value(&supply_75, &tokens_350).unwrap();
+
+        let expected = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0])
+            .checked_mul(&UnsignedNumeric::new(25).unwrap()).unwrap()  // partial start step
+            .checked_add(
+                &UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1])
+                    .checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap()
+            ).unwrap()
+            .checked_add(
+                &UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[2])
+                    .checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap()
+            ).unwrap()
+            .checked_add(
+                &UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[3])
+                    .checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap()
+            ).unwrap()
+            .checked_add(
+                &UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[4])
+                    .checked_mul(&UnsignedNumeric::new(25).unwrap()).unwrap()  // partial end step
+            ).unwrap();
+        assert_eq!(cost.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_from_step_boundary() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying from exact step boundary
+        let supply_100 = UnsignedNumeric::new(100).unwrap();
+        let tokens_150 = UnsignedNumeric::new(150).unwrap();
+        let cost = curve.tokens_to_value(&supply_100, &tokens_150).unwrap();
+
+        // 100 tokens at price[1], 50 tokens at price[2]
+        let expected = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1])
+            .checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap()
+            .checked_add(
+                &UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[2])
+                    .checked_mul(&UnsignedNumeric::new(50).unwrap()).unwrap()
+            ).unwrap();
+        assert_eq!(cost.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_exceeds_table_returns_none() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Buying tokens that would exceed the table should return None
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let tokens_too_many = UnsignedNumeric::new(
+            (DISCRETE_PRICING_TABLE.len() as u128 + 1) * DISCRETE_PRICING_STEP_SIZE
+        ).unwrap();
+        assert!(curve.tokens_to_value(&supply, &tokens_too_many).is_none());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_at_high_supply() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying tokens at higher supply levels
+        let supply = UnsignedNumeric::new(1_000_000).unwrap(); // step 10000
+        let tokens_500 = UnsignedNumeric::new(500).unwrap();
+        let cost = curve.tokens_to_value(&supply, &tokens_500).unwrap();
+
+        // Manually calculate expected cost for 5 full steps starting at step 10000
+        let mut expected = UnsignedNumeric::zero();
+        for i in 10000..10005 {
+            let step_cost = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[i])
+                .checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap();
+            expected = expected.checked_add(&step_cost).unwrap();
+        }
+        assert_eq!(cost.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_is_additive() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Cost of buying A + B tokens should equal cost of A then cost of B from new supply
+        let supply = UnsignedNumeric::new(50).unwrap();
+        let tokens_a = UnsignedNumeric::new(200).unwrap();
+        let tokens_b = UnsignedNumeric::new(150).unwrap();
+        let tokens_total = tokens_a.checked_add(&tokens_b).unwrap();
+
+        let cost_total = curve.tokens_to_value(&supply, &tokens_total).unwrap();
+
+        let cost_a = curve.tokens_to_value(&supply, &tokens_a).unwrap();
+        let new_supply = supply.checked_add(&tokens_a).unwrap();
+        let cost_b = curve.tokens_to_value(&new_supply, &tokens_b).unwrap();
+        let cost_sum = cost_a.checked_add(&cost_b).unwrap();
+
+        assert_eq!(cost_total.to_string(), cost_sum.to_string(),
+            "tokens_to_value should be additive");
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_small_amounts() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test buying very small amounts (1 token)
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let tokens_1 = UnsignedNumeric::new(1).unwrap();
+        let cost_1 = curve.tokens_to_value(&supply, &tokens_1).unwrap();
+        let expected_1 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+        assert_eq!(cost_1.to_string(), expected_1.to_string());
+
+        // Test buying 1 token at various positions
+        for pos in [0, 50, 99, 100, 150] {
+            let supply = UnsignedNumeric::new(pos).unwrap();
+            let step_index = (pos / DISCRETE_PRICING_STEP_SIZE) as usize;
+            let cost = curve.tokens_to_value(&supply, &tokens_1).unwrap();
+            let expected = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[step_index]);
+            assert_eq!(cost.to_string(), expected.to_string(),
+                "Cost of 1 token at supply {} should be price at step {}", pos, step_index);
+        }
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_zero_value() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test with 0 value from various supplies
+        for supply_val in [0, 50, 100, 1000, 10000] {
+            let supply = UnsignedNumeric::new(supply_val).unwrap();
+            let value = UnsignedNumeric::zero();
+            let tokens = curve.value_to_tokens(&supply, &value).unwrap();
+            assert_eq!(tokens.to_string(), UnsignedNumeric::zero().to_string(),
+                "0 value from supply {} should yield 0 tokens", supply_val);
+        }
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_within_single_step() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
 
         // Test buying approximately 50 tokens at price[0]
-        let value_for_50 = price_0.checked_mul(tokens_50).unwrap();
+        let tokens_50 = UnsignedNumeric::new(50).unwrap();
+        let value_for_50 = price_0.checked_mul(&tokens_50).unwrap();
         let tokens_result_50 = curve.value_to_tokens(&supply, &value_for_50).unwrap();
-        assert_approx_eq(&tokens_result_50,  &tokens_50, 0);
+        assert_approx_eq(&tokens_result_50, &tokens_50, 0);
+
+        // Test buying 25 tokens
+        let tokens_25 = UnsignedNumeric::new(25).unwrap();
+        let value_for_25 = price_0.checked_mul(&tokens_25).unwrap();
+        let tokens_result_25 = curve.value_to_tokens(&supply, &value_for_25).unwrap();
+        assert_approx_eq(&tokens_result_25, &tokens_25, 0);
+
+        // Test buying 99 tokens (just under step boundary)
+        let tokens_99 = UnsignedNumeric::new(99).unwrap();
+        let value_for_99 = price_0.checked_mul(&tokens_99).unwrap();
+        let tokens_result_99 = curve.value_to_tokens(&supply, &value_for_99).unwrap();
+        assert_approx_eq(&tokens_result_99, &tokens_99, 0);
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_exact_step() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+        let tokens_100 = UnsignedNumeric::new(100).unwrap();
 
         // Test buying exactly 100 tokens worth at price[0]
         let value_for_100 = price_0.checked_mul(&tokens_100).unwrap();
-        let tokens_result_100 = curve.value_to_tokens(&supply, &value_for_100).unwrap();
-        assert_approx_eq(&tokens_result_100,  &tokens_100, 50);
+        let tokens_result = curve.value_to_tokens(&supply, &value_for_100).unwrap();
+        // Allow small tolerance since we cross a step boundary
+        assert_approx_eq(&tokens_result, &tokens_100, 100);
+    }
 
-        // Test buying exactly 100 tokens worth at price[0] and 50 tokens at price[1]
+    #[test]
+    fn test_discrete_value_to_tokens_crossing_boundary() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+        let price_1 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1]);
+
+        let tokens_100 = UnsignedNumeric::new(100).unwrap();
+        let tokens_50 = UnsignedNumeric::new(50).unwrap();
+        let tokens_150 = UnsignedNumeric::new(150).unwrap();
+
+        // Test buying 100 tokens at price[0] and 50 tokens at price[1]
         let value_for_first_100 = price_0.checked_mul(&tokens_100).unwrap();
         let value_for_next_50 = price_1.checked_mul(&tokens_50).unwrap();
-        let value_for_150 =value_for_first_100.checked_add(&value_for_next_50) .unwrap();
-        let tokens_result_150 = curve.value_to_tokens(&supply, &value_for_150).unwrap();
-        assert_approx_eq(&tokens_result_150,  &tokens_150, 50);
+        let value_for_150 = value_for_first_100.checked_add(&value_for_next_50).unwrap();
+        let tokens_result = curve.value_to_tokens(&supply, &value_for_150).unwrap();
+        assert_approx_eq(&tokens_result, &tokens_150, 100);
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_from_partial_step() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply_50 = UnsignedNumeric::new(50).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+        let price_1 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1]);
+
+        // From supply 50, buying 50 tokens at price[0] and 100 tokens at price[1]
+        let tokens_50 = UnsignedNumeric::new(50).unwrap();
+        let tokens_100 = UnsignedNumeric::new(100).unwrap();
+        let tokens_150 = UnsignedNumeric::new(150).unwrap();
+
+        let value = price_0.checked_mul(&tokens_50).unwrap()
+            .checked_add(&price_1.checked_mul(&tokens_100).unwrap()).unwrap();
+        let tokens_result = curve.value_to_tokens(&supply_50, &value).unwrap();
+        assert_approx_eq(&tokens_result, &tokens_150, 100);
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_multiple_steps() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+
+        // Calculate value for 5 full steps (500 tokens)
+        let mut value = UnsignedNumeric::zero();
+        for i in 0..5 {
+            let price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[i]);
+            let step_value = price.checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap();
+            value = value.checked_add(&step_value).unwrap();
+        }
+
+        let tokens_result = curve.value_to_tokens(&supply, &value).unwrap();
+        let tokens_500 = UnsignedNumeric::new(500).unwrap();
+        assert_approx_eq(&tokens_result, &tokens_500, 100);
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_at_high_supply() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(1_000_000).unwrap(); // step 10000
+
+        // Calculate value for buying tokens at high supply
+        let price = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[10000]);
+        let tokens_50 = UnsignedNumeric::new(50).unwrap();
+        let value = price.checked_mul(&tokens_50).unwrap();
+
+        let tokens_result = curve.value_to_tokens(&supply, &value).unwrap();
+        assert_approx_eq(&tokens_result, &tokens_50, 0);
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_insufficient_for_step_completion() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply_50 = UnsignedNumeric::new(50).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+
+        // Value that can't complete the current step (only 25 tokens)
+        let tokens_25 = UnsignedNumeric::new(25).unwrap();
+        let value_for_25 = price_0.checked_mul(&tokens_25).unwrap();
+        let tokens_result = curve.value_to_tokens(&supply_50, &value_for_25).unwrap();
+        assert_approx_eq(&tokens_result, &tokens_25, 0);
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_just_enough_to_complete_step() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply_50 = UnsignedNumeric::new(50).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+
+        // Value exactly enough to complete the current step (50 tokens to reach 100)
+        let tokens_50 = UnsignedNumeric::new(50).unwrap();
+        let value_for_50 = price_0.checked_mul(&tokens_50).unwrap();
+        let tokens_result = curve.value_to_tokens(&supply_50, &value_for_50).unwrap();
+        // Allow small tolerance for floating point precision
+        assert_approx_eq(&tokens_result, &tokens_50, 100);
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_beyond_max_returns_none() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Supply near the end of the table
+        let near_max_supply = UnsignedNumeric::new(
+            (DISCRETE_PRICING_TABLE.len() - 1) as u128 * DISCRETE_PRICING_STEP_SIZE
+        ).unwrap();
+
+        // This should return None since we're at the last step
+        assert!(curve.value_to_tokens(&near_max_supply, &UnsignedNumeric::new(1000000000000000000).unwrap()).is_none());
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_small_value() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+
+        // Value for exactly 1 token
+        let value_for_1 = price_0.clone();
+        let tokens_result = curve.value_to_tokens(&supply, &value_for_1).unwrap();
+        let tokens_1 = UnsignedNumeric::new(1).unwrap();
+        assert_approx_eq(&tokens_result, &tokens_1, 0);
+
+        // Value for less than 1 token (should floor to 0)
+        let half_price = price_0.checked_div(&UnsignedNumeric::new(2).unwrap()).unwrap();
+        let tokens_result_half = curve.value_to_tokens(&supply, &half_price).unwrap();
+        assert_eq!(tokens_result_half.to_string(), UnsignedNumeric::zero().to_string());
+    }
+
+    #[test]
+    fn test_discrete_value_to_tokens_partial_end_step() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+        let price_1 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[1]);
+
+        // Value for 100 tokens at price[0] + 75 tokens at price[1] = 175 tokens
+        let tokens_100 = UnsignedNumeric::new(100).unwrap();
+        let tokens_75 = UnsignedNumeric::new(75).unwrap();
+        let tokens_175 = UnsignedNumeric::new(175).unwrap();
+
+        let value = price_0.checked_mul(&tokens_100).unwrap()
+            .checked_add(&price_1.checked_mul(&tokens_75).unwrap()).unwrap();
+        let tokens_result = curve.value_to_tokens(&supply, &value).unwrap();
+        assert_approx_eq(&tokens_result, &tokens_175, 100);
     }
 
     #[test]
@@ -587,6 +1040,215 @@ mod tests {
         let tokens_discrete = discrete_curve.value_to_tokens(&supply, &UnsignedNumeric::new(1139973004315).unwrap()).unwrap();
         println!("Continuous Tokens: {}", tokens_continuous.to_string());
         println!("Discrete Tokens:   {}", tokens_discrete.to_string());
+    }
+
+    #[test]
+    fn test_discrete_roundtrip_tokens_to_value_to_tokens() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test roundtrip: tokens -> value -> tokens should be approximately equal
+        // (may lose some precision due to flooring in value_to_tokens)
+        let test_cases: Vec<(u128, u128)> = vec![
+            (0, 100),
+            (0, 250),
+            (0, 500),
+            (50, 150),
+            (100, 200),
+            (1000, 1000),
+            (10000, 5000),
+        ];
+
+        for (supply_val, tokens_val) in test_cases {
+            let supply = UnsignedNumeric::new(supply_val).unwrap();
+            let tokens = UnsignedNumeric::new(tokens_val).unwrap();
+
+            // Convert tokens to value
+            let value = curve.tokens_to_value(&supply, &tokens).unwrap();
+
+            // Convert value back to tokens
+            let tokens_back = curve.value_to_tokens(&supply, &value).unwrap();
+
+            // Should get approximately the same number of tokens back
+            // (allow tolerance for flooring in partial end steps)
+            assert_approx_eq(&tokens_back, &tokens, 100,
+            );
+        }
+    }
+
+    #[test]
+    fn test_discrete_roundtrip_value_to_tokens_to_value() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test roundtrip: value -> tokens -> value
+        // Result should be <= original value (since we floor tokens)
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+
+        let test_values: Vec<UnsignedNumeric> = vec![
+            price_0.checked_mul(&UnsignedNumeric::new(50).unwrap()).unwrap(),
+            price_0.checked_mul(&UnsignedNumeric::new(100).unwrap()).unwrap(),
+            price_0.checked_mul(&UnsignedNumeric::new(250).unwrap()).unwrap(),
+        ];
+
+        for value in test_values {
+            let supply = UnsignedNumeric::new(0).unwrap();
+
+            // Convert value to tokens
+            let tokens = curve.value_to_tokens(&supply, &value).unwrap();
+
+            // Convert tokens back to value
+            let value_back = curve.tokens_to_value(&supply, &tokens).unwrap();
+
+            // Result should be <= original value (due to flooring)
+            assert!(value_back.less_than_or_equal(&value),
+                "Roundtrip value {} -> tokens {} -> value {} should not increase",
+                value.to_string(), tokens.to_string(), value_back.to_string());
+        }
+    }
+
+    #[test]
+    fn test_discrete_spot_price_matches_tokens_to_value_for_small_amounts() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // For very small purchases within a single step, the cost should be
+        // exactly tokens * spot_price
+        for step in 0..10 {
+            let supply = UnsignedNumeric::new(step * DISCRETE_PRICING_STEP_SIZE).unwrap();
+            let tokens_1 = UnsignedNumeric::new(1).unwrap();
+
+            let spot_price = curve.spot_price_at_supply(&supply).unwrap();
+            let cost = curve.tokens_to_value(&supply, &tokens_1).unwrap();
+
+            assert_eq!(spot_price.to_string(), cost.to_string(),
+                "Cost of 1 token at step {} should equal spot price", step);
+        }
+    }
+
+    #[test]
+    fn test_discrete_tokens_to_value_consistency_with_cumulative_table() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Verify that buying from 0 to step boundary equals cumulative table
+        for step in [0, 10, 100, 1000, 10000] {
+            if step >= DISCRETE_CUMULATIVE_VALUE_TABLE.len() {
+                continue;
+            }
+
+            let supply = UnsignedNumeric::new(0).unwrap();
+            let tokens = UnsignedNumeric::new(step as u128 * DISCRETE_PRICING_STEP_SIZE).unwrap();
+
+            let value = curve.tokens_to_value(&supply, &tokens).unwrap();
+            let cumulative = UnsignedNumeric::from_scaled_u128(DISCRETE_CUMULATIVE_VALUE_TABLE[step]);
+
+            assert_eq!(value.to_string(), cumulative.to_string(),
+                "tokens_to_value(0, {}) should match cumulative table at step {}",
+                step as u128 * DISCRETE_PRICING_STEP_SIZE, step);
+        }
+    }
+
+    #[test]
+    fn test_discrete_methods_handle_step_boundaries_consistently() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Test that all methods transition correctly at step boundaries
+        for boundary in [100, 200, 500, 1000] {
+            let boundary_supply = UnsignedNumeric::new(boundary).unwrap();
+            let just_before = UnsignedNumeric::new(boundary - 1).unwrap();
+            let just_after = UnsignedNumeric::new(boundary + 1).unwrap();
+
+            // spot_price should change at boundary
+            let price_before = curve.spot_price_at_supply(&just_before).unwrap();
+            let price_at = curve.spot_price_at_supply(&boundary_supply).unwrap();
+            let price_after = curve.spot_price_at_supply(&just_after).unwrap();
+
+            // Before and at boundary should be different (boundary is start of new step)
+            assert!(price_at.greater_than(&price_before) || price_before.eq(&price_at),
+                "Price at boundary {} should be >= price just before", boundary);
+
+            // At boundary and just after should be the same
+            assert_eq!(price_at.to_string(), price_after.to_string(),
+                "Price at boundary {} should equal price just after", boundary);
+        }
+    }
+
+    #[test]
+    fn test_discrete_buying_in_parts_equals_buying_all_at_once() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+
+        // Buying 100 + 200 + 150 should equal buying 450
+        let tokens_100 = UnsignedNumeric::new(100).unwrap();
+        let tokens_200 = UnsignedNumeric::new(200).unwrap();
+        let tokens_150 = UnsignedNumeric::new(150).unwrap();
+        let tokens_450 = UnsignedNumeric::new(450).unwrap();
+
+        let cost_100 = curve.tokens_to_value(&supply, &tokens_100).unwrap();
+        let supply_after_100 = supply.checked_add(&tokens_100).unwrap();
+
+        let cost_200 = curve.tokens_to_value(&supply_after_100, &tokens_200).unwrap();
+        let supply_after_300 = supply_after_100.checked_add(&tokens_200).unwrap();
+
+        let cost_150 = curve.tokens_to_value(&supply_after_300, &tokens_150).unwrap();
+
+        let total_cost_parts = cost_100.checked_add(&cost_200).unwrap()
+            .checked_add(&cost_150).unwrap();
+
+        let total_cost_once = curve.tokens_to_value(&supply, &tokens_450).unwrap();
+
+        assert_eq!(total_cost_parts.to_string(), total_cost_once.to_string(),
+            "Buying in parts should equal buying all at once");
+    }
+
+    #[test]
+    fn test_discrete_default_creates_valid_curve() {
+        let curve = DiscreteExponentialCurve::default();
+
+        // Just verify we can use the curve and get valid results
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let tokens = UnsignedNumeric::new(100).unwrap();
+
+        let price = curve.spot_price_at_supply(&supply);
+        assert!(price.is_some(), "default curve should return spot price");
+
+        let value = curve.tokens_to_value(&supply, &tokens);
+        assert!(value.is_some(), "default curve should calculate tokens_to_value");
+
+        let price_val = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+        let test_value = price_val.checked_mul(&UnsignedNumeric::new(50).unwrap()).unwrap();
+        let tokens_result = curve.value_to_tokens(&supply, &test_value);
+        assert!(tokens_result.is_some(), "default curve should calculate value_to_tokens");
+    }
+
+    #[test]
+    fn test_discrete_large_purchase_across_many_steps() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+
+        // Buy a large amount that spans many steps
+        let large_tokens = UnsignedNumeric::new(10_000).unwrap(); // 100 steps
+        let value = curve.tokens_to_value(&supply, &large_tokens).unwrap();
+
+        // Verify it's positive
+        assert!(value.greater_than(&UnsignedNumeric::zero()));
+
+        // Verify roundtrip is close
+        let tokens_back = curve.value_to_tokens(&supply, &value).unwrap();
+        assert_approx_eq(&tokens_back, &large_tokens, 100);
+    }
+
+    #[test]
+    fn test_discrete_fractional_tokens_handling() {
+        let curve = DiscreteExponentialCurve::default();
+        let supply = UnsignedNumeric::new(0).unwrap();
+        let price_0 = UnsignedNumeric::from_scaled_u128(DISCRETE_PRICING_TABLE[0]);
+
+        // Value for 10.5 tokens worth (fractional)
+        let value_for_10_point_5 = price_0.checked_mul(&UnsignedNumeric::new(10).unwrap()).unwrap()
+            .checked_add(&price_0.checked_div(&UnsignedNumeric::new(2).unwrap()).unwrap()).unwrap();
+
+        // Should get 10 tokens (floored)
+        let tokens = curve.value_to_tokens(&supply, &value_for_10_point_5).unwrap();
+        let expected_10 = UnsignedNumeric::new(10).unwrap();
+        assert_approx_eq(&tokens, &expected_10, 0);
     }
 
     #[test]

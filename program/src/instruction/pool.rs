@@ -39,7 +39,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
 
     check_condition(
         base_mint.decimals() <= 18,
-        "Base mints decimals cannot exceed 18"
+        "Base mint decimals cannot exceed 18"
     )?;
 
     check_condition(

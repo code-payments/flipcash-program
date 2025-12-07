@@ -49,7 +49,7 @@ pub fn to_name(val: &str) -> [u8; MAX_NAME_LEN] {
     assert!(val.len() <= MAX_NAME_LEN, "name too long");
 
     let mut name_bytes = [0u8; MAX_NAME_LEN];
-    name_bytes[..val.len()].copy_from_slice(val.as_bytes());
+    name_bytes[..val.as_bytes().len()].copy_from_slice(val.as_bytes());
     name_bytes
 }
 
@@ -63,7 +63,7 @@ pub fn to_symbol(val: &str) -> [u8; MAX_SYMBOL_LEN] {
     assert!(val.len() <= MAX_SYMBOL_LEN, "symbol too long");
 
     let mut symbol_bytes = [0u8; MAX_SYMBOL_LEN];
-    symbol_bytes[..val.len()].copy_from_slice(val.as_bytes());
+    symbol_bytes[..val.as_bytes().len()].copy_from_slice(val.as_bytes());
     symbol_bytes
 }
 

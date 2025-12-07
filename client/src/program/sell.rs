@@ -44,7 +44,6 @@ pub async fn sell(
     let sell_ix = build_sell_tokens_ix(
         seller,
         pool_pda,
-        currency_pda,
         mint,
         base_mint,
         in_amount,

@@ -55,7 +55,7 @@ pub fn build_initialize_pool_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(authority, true),
-            AccountMeta::new(currency, false),
+            AccountMeta::new_readonly(currency, false),
             AccountMeta::new(target_mint, false),
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(pool_pda, false),
@@ -107,7 +107,6 @@ pub fn build_initialize_metadata_ix(
 pub fn build_buy_tokens_ix(
     buyer: Pubkey,
     pool: Pubkey,
-    currency: Pubkey,
     target_mint: Pubkey,
     base_mint: Pubkey,
     in_amount: u64,
@@ -125,8 +124,7 @@ pub fn build_buy_tokens_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(buyer, true),
-            AccountMeta::new(pool, false),
-            AccountMeta::new(currency, false),
+            AccountMeta::new_readonly(pool, false),
             AccountMeta::new_readonly(target_mint, false),
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
@@ -145,7 +143,6 @@ pub fn build_buy_tokens_ix(
 pub fn build_sell_tokens_ix(
     seller: Pubkey,
     pool: Pubkey,
-    currency: Pubkey,
     target_mint: Pubkey,
     base_mint: Pubkey,
     in_amount: u64,
@@ -163,8 +160,7 @@ pub fn build_sell_tokens_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(seller, true),
-            AccountMeta::new(pool, false),
-            AccountMeta::new(currency, false),
+            AccountMeta::new_readonly(pool, false),
             AccountMeta::new_readonly(target_mint, false),
             AccountMeta::new(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
@@ -183,7 +179,6 @@ pub fn build_sell_tokens_ix(
 pub fn build_buy_and_deposit_into_vm_ix(
     buyer: Pubkey,
     pool: Pubkey,
-    currency: Pubkey,
     target_mint: Pubkey,
     base_mint: Pubkey,
     buyer_base_ata: Pubkey,
@@ -205,8 +200,7 @@ pub fn build_buy_and_deposit_into_vm_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(buyer, true),
-            AccountMeta::new(pool, false),
-            AccountMeta::new(currency, false),
+            AccountMeta::new_readonly(pool, false),
             AccountMeta::new(target_mint, false),
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
@@ -230,7 +224,6 @@ pub fn build_buy_and_deposit_into_vm_ix(
 pub fn build_sell_and_deposit_into_vm_ix(
     seller: Pubkey,
     pool: Pubkey,
-    currency: Pubkey,
     target_mint: Pubkey,
     base_mint: Pubkey,
     seller_target_ata: Pubkey,
@@ -252,8 +245,7 @@ pub fn build_sell_and_deposit_into_vm_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(seller, true),
-            AccountMeta::new(pool, false),
-            AccountMeta::new(currency, false),
+            AccountMeta::new_readonly(pool, false),
             AccountMeta::new(target_mint, false),
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),

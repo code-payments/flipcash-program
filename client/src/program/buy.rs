@@ -45,7 +45,6 @@ pub async fn buy(
     let buy_ix = build_buy_tokens_ix(
         buyer,
         pool_pda,
-        currency_pda,
         mint,
         base_mint,
         in_amount,

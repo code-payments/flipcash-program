@@ -30,7 +30,7 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], _data: &[u8]) -> Pr
     check_program(system_program_info, &system_program::id())?;
     check_sysvar(rent_sysvar_info, &sysvar::rent::id())?;
 
-    let currency = currency_info.as_account_mut::<CurrencyConfig>(&flipcash_api::ID)?;
+    let currency = currency_info.as_account::<CurrencyConfig>(&flipcash_api::ID)?;
 
     check_condition(
         currency.authority.eq(authority_info.key),

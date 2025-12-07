@@ -8,7 +8,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let [
         buyer_info,
         pool_info,
-        currency_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -29,7 +28,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let tokens_after_fee_raw= buy_common(
         buyer_info,
         pool_info,
-        currency_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -66,7 +64,6 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
     let [
         buyer_info,
         pool_info,
-        currency_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -96,7 +93,6 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
     let tokens_after_fee_raw= buy_common(
         buyer_info,
         pool_info,
-        currency_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -137,7 +133,6 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
 fn buy_common<'info>(
     buyer_info: &AccountInfo<'info>,
     pool_info: &AccountInfo<'info>,
-    currency_info: &AccountInfo<'info>,
     target_mint_info: &AccountInfo<'info>,
     base_mint_info: &AccountInfo<'info>,
     target_vault_info: &AccountInfo<'info>,
@@ -150,8 +145,6 @@ fn buy_common<'info>(
 ) -> Result<u64, ProgramError>{
     // Basic checks
     check_signer(buyer_info)?;
-    check_mut(pool_info)?;
-    check_mut(currency_info)?;
     check_mut(target_vault_info)?;
     check_mut(base_vault_info)?;
     check_mut(buyer_target_ata_info)?;
@@ -168,7 +161,7 @@ fn buy_common<'info>(
         .assert(|t| t.owner().eq(buyer_info.key))?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
-    let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
+    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
 
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,

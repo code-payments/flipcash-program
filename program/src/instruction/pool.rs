@@ -23,7 +23,6 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     //solana_program::msg!("Args: {:?}", args);
 
     check_signer(authority_info)?;
-    check_mut(currency_info)?;
     check_mut(target_mint_info)?;
     check_mut(pool_info)?;
     check_mut(target_vault_info)?;
@@ -61,7 +60,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         &flipcash_api::id()
     )?;
 
-    let currency = currency_info.as_account_mut::<CurrencyConfig>(&flipcash_api::ID)?;
+    let currency = currency_info.as_account::<CurrencyConfig>(&flipcash_api::ID)?;
 
     check_condition(
         currency.authority.eq(authority_info.key),

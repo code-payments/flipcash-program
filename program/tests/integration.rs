@@ -133,7 +133,6 @@ fn run_integration() {
     let buy_ix = build_buy_tokens_ix(
         user_pk,
         pool_pda,
-        currency_pda,
         mint_pda,
         usdc,
         buy_amount,
@@ -161,7 +160,6 @@ fn run_integration() {
     let sell_ix = build_sell_tokens_ix(
         user_pk,
         pool_pda,
-        currency_pda,
         mint_pda,
         usdc,
         sell_amount,
@@ -257,7 +255,6 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
         let buy_ix = build_buy_tokens_ix(
             user_pk,
             pool_pda,
-            currency_pda,
             mint_pda,
             usdc,
             buy_amount,
@@ -303,7 +300,6 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
         let sell_ix = build_sell_tokens_ix(
             user_pk,
             pool_pda,
-            currency_pda,
             mint_pda,
             usdc,
             sell_amount,
@@ -408,7 +404,6 @@ fn run_buy_and_sell_simulation_random() {
             let buy_ix = build_buy_tokens_ix(
                 user_pk,
                 pool_pda,
-                currency_pda,
                 mint_pda,
                 usdc,
                 buy_amount,
@@ -425,7 +420,6 @@ fn run_buy_and_sell_simulation_random() {
             let sell_ix = build_sell_tokens_ix(
                 user_pk,
                 pool_pda,
-                currency_pda,
                 mint_pda,
                 usdc,
                 sell_amount,

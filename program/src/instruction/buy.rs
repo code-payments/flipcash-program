@@ -196,20 +196,28 @@ fn buy_common<'info>(
         in_amount_raw = buyer_base_ata.amount();
     }
 
-    let curve = DiscreteExponentialCurve::default();
-
-    let zero = to_numeric(0, 0)?;
     let tokens_left = to_numeric(tokens_left_raw, mint_a_decimals)?;
     let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
-    let in_amount = to_numeric(in_amount_raw, mint_b_decimals)?;
     let current_value = to_numeric(current_value_raw, mint_b_decimals)?;
-    let new_value = current_value
+
+    let in_amount = to_numeric(in_amount_raw, mint_b_decimals)?;
+    let uncapped_new_value = current_value
         .checked_add(&in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
-
-    let new_supply = curve.value_to_tokens(&zero, &new_value)
+    let max_cumulative_value = UnsignedNumeric::from_scaled_u128(MAX_CUMULATIVE_VALUE);
+    let capped_new_value = if uncapped_new_value.greater_than(&max_cumulative_value) {
+        max_cumulative_value
+    } else {
+        uncapped_new_value
+    };
+    let capped_in_amount = capped_new_value
+        .checked_sub(&current_value)
         .ok_or(ProgramError::InvalidArgument)?;
 
+    let curve = DiscreteExponentialCurve::default();
+    let zero = to_numeric(0, 0)?;
+    let new_supply = curve.value_to_tokens(&zero, &capped_new_value)
+        .ok_or(ProgramError::InvalidArgument)?;
     let mut tokens_bought = new_supply
         .checked_sub(&supply)
         .ok_or(ProgramError::InvalidArgument)?;
@@ -217,9 +225,10 @@ fn buy_common<'info>(
         tokens_bought = tokens_left;
     }
 
-    //solana_program::msg!("paying: ${}", in_amount.to_string());
+    //solana_program::msg!("paying: ${}", capped_in_amount.to_string());
     //solana_program::msg!("for: {}", tokens_bought.to_string());
 
+    let actual_in_amount_raw = from_numeric(capped_in_amount, mint_b_decimals)?;
     let tokens_bought_raw = from_numeric(tokens_bought, mint_a_decimals)?;
 
     check_condition(
@@ -236,7 +245,7 @@ fn buy_common<'info>(
         buyer_base_ata_info,
         base_vault_info,
         token_program_info,
-        in_amount_raw,
+        actual_in_amount_raw,
     )?;
 
     Ok(tokens_bought_raw)

@@ -19,10 +19,11 @@ pub mod prelude {
     pub use crate::curve::*;
     pub use crate::table::*;
     pub use crate::instruction::*;
-    pub use crate::state::*; 
+    pub use crate::state::*;
     pub use crate::pda::*;
     pub use crate::cpis::*;
     pub use crate::utils::*;
+    pub use brine_fp::UnsignedNumeric;
 
     #[cfg(not(target_os = "solana"))]
     pub use crate::sdk::*;

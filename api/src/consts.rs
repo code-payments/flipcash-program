@@ -18,3 +18,7 @@ pub const CURVE_A: u128         = 11400_230149967394933471;
 pub const CURVE_B: u128         = 0_000000877175273521;
 pub const CURVE_C: u128         = CURVE_B;
 
+// Maximum cumulative value to buy all 21mm tokens (from DISCRETE_CUMULATIVE_VALUE_TABLE)
+// This is the value at Supply: 21000000 with 18 decimal precision
+pub const MAX_CUMULATIVE_VALUE: u128 = 1139973004315032342581716939500;
+

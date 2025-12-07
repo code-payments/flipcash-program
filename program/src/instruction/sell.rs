@@ -197,9 +197,6 @@ fn sell_common<'info>(
         in_amount_raw = seller_target_ata.amount();
     }
 
-    let curve = DiscreteExponentialCurve::default();
-
-    let zero = to_numeric(0, 0)?;
     let in_amount = to_numeric(in_amount_raw, mint_a_decimals)?;
     let new_supply = to_numeric(supply_from_bonding, mint_a_decimals)?
         .checked_sub(&in_amount)
@@ -207,6 +204,8 @@ fn sell_common<'info>(
     let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
     let fee_rate = from_basis_points(pool.sell_fee)?;
 
+    let curve = DiscreteExponentialCurve::default();
+    let zero = to_numeric(0, 0)?;
     let new_value = curve.tokens_to_value(&zero, &new_supply)
         .ok_or(ProgramError::InvalidArgument)?;
 

@@ -243,7 +243,7 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
     let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
     let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
 
-    let mint_amt = as_token(1_139_973_004_316, usdc_decimals);
+    let mint_amt = as_token(2_000_000_000_000, usdc_decimals);
     let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
     assert!(res.is_ok());
 
@@ -278,6 +278,10 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
         println!("Vault DSKY balance: {:?}", vault_mint_balance);
         println!("User USDC balance: {:?}", user_usdc_balance);
         println!("Vault USDC balance: {:?}", vault_usdc_balance);
+
+        if user_mint_balance == as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS) {
+            break;
+        }
     }
 
     let user_mint_balance = get_ata_balance(&svm, &user_mint_ata);
@@ -285,9 +289,9 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
     let vault_a_balance = get_ata_balance(&svm, &vault_a_pda);
     let vault_b_balance = get_ata_balance(&svm, &vault_b_pda);
     assert!(user_mint_balance == as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS), "User should have all DSKY");
-    assert!(user_usdc_balance == 0, "User should have no USDC");
+    assert!(user_usdc_balance > 0, "User should have some USDC left");
     assert!(vault_a_balance == 0, "Vault A should have no DSKY");
-    assert!(vault_b_balance == mint_amt, "Vault B should have all USDC");
+    assert!(vault_b_balance == 1_139_973_004_315_032_343, "Vault B should have the cumulative USDC to buy all tokens");
 
     let iterations = 12_345;
     let sell_amount_per_iteration = get_ata_balance(&svm, &user_mint_ata) / iterations;

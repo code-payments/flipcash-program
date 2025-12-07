@@ -44,7 +44,7 @@ pub fn create_token_account<'info>(
     )?;
 
     // Initialize the PDA.
-    solana_program::program::invoke_signed(
+    solana_program::program::invoke(
         &spl_token::instruction::initialize_account(
             &spl_token::id(),
             target.key,
@@ -57,7 +57,7 @@ pub fn create_token_account<'info>(
             target.clone(),
             rent_sysvar.clone(),
         ],
-        &[seeds],
+        //&[seeds],
     )
 }
 
@@ -98,7 +98,7 @@ pub fn create_mint_account<'info>(
     )?;
 
     // Initialize the mint
-    solana_program::program::invoke_signed(
+    solana_program::program::invoke(
         &spl_token::instruction::initialize_mint(
             &spl_token::id(),
             mint.key,
@@ -110,7 +110,6 @@ pub fn create_mint_account<'info>(
             mint.clone(),
             rent_sysvar.clone(),
         ],
-        &[seeds],
     )?;
 
     Ok(())

@@ -17,7 +17,7 @@ pub fn process_initialize_currency(accounts: &[AccountInfo], data: &[u8]) -> Pro
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    solana_program::msg!("Args: {:?}", args);
+    //solana_program::msg!("Args: {:?}", args);
 
     check_signer(authority_info)?;
     check_mut(mint_info)?;

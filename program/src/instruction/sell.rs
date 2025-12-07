@@ -20,7 +20,7 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    solana_program::msg!("Args: {:?}", args);
+    //solana_program::msg!("Args: {:?}", args);
 
     seller_base_ata_info.as_token_account()?
         .assert(|t| t.owner().eq(seller_info.key))?
@@ -83,7 +83,7 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    solana_program::msg!("Args: {:?}", args);
+    //solana_program::msg!("Args: {:?}", args);
 
     check_mut(vm_authority_info)?;
     check_mut(vm_info)?;
@@ -159,10 +159,13 @@ fn sell_common<'info>(
     check_mut(seller_base_ata_info)?;
     check_program(token_program_info, &spl_token::id())?;
 
-    target_mint_info.as_mint()?;
-    base_mint_info.as_mint()?;
+    let target_mint = target_mint_info.as_mint()?;
+    let base_mint = base_mint_info.as_mint()?;
+    let seller_target_ata = seller_target_ata_info.as_token_account()?;
+    let target_vault = target_vault_info.as_token_account()?;
+    let base_vault = base_vault_info.as_token_account()?;
 
-    seller_target_ata_info.as_token_account()?
+    seller_target_ata
         .assert(|t| t.owner().eq(seller_info.key))?
         .assert(|t| t.mint().eq(target_mint_info.key))?;
 
@@ -177,21 +180,21 @@ fn sell_common<'info>(
         "Invalid vault accounts"
     )?;
 
-    let mint_a_decimals = target_mint_info.as_mint()?.decimals();
-    let mint_b_decimals = base_mint_info.as_mint()?.decimals();
+    let mint_a_decimals = target_mint.decimals();
+    let mint_b_decimals = base_mint.decimals();
 
-    let tokens_left_raw = target_vault_info.as_token_account()?.amount();
+    let tokens_left_raw = target_vault.amount();
     let supply_from_bonding = MAX_TOKEN_SUPPLY
         .checked_mul(QUARKS_PER_TOKEN)
         .ok_or(ProgramError::InvalidArgument)?
         .checked_sub(tokens_left_raw)
         .ok_or(ProgramError::InvalidArgument)?;
 
-    let value_left_raw = base_vault_info.as_token_account()?.amount();
+    let value_left_raw = base_vault.amount();
 
     let mut in_amount_raw = in_amount_arg;
     if in_amount_raw == 0 {
-        in_amount_raw = seller_target_ata_info.as_token_account()?.amount();
+        in_amount_raw = seller_target_ata.amount();
     }
 
     let curve = DiscreteExponentialCurve::default();
@@ -221,10 +224,10 @@ fn sell_common<'info>(
         .checked_sub(&fee_amount)
         .ok_or(ProgramError::InvalidArgument)?;
 
-    solana_program::msg!("selling: {}", in_amount.to_string());
-    solana_program::msg!("for: ${}", total_sell_value.to_string());
-    solana_program::msg!("fee: ${}", fee_amount.to_string());
-    solana_program::msg!("value_after_fee: ${}", sell_value_after_fee.to_string());
+    //solana_program::msg!("selling: {}", in_amount.to_string());
+    //solana_program::msg!("for: ${}", total_sell_value.to_string());
+    //solana_program::msg!("fee: ${}", fee_amount.to_string());
+    //solana_program::msg!("value_after_fee: ${}", sell_value_after_fee.to_string());
 
     let fee_amount_raw = from_numeric(fee_amount, mint_b_decimals)?;
     let sell_value_after_fee_raw = from_numeric(sell_value_after_fee, mint_b_decimals)?;

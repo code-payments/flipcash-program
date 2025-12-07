@@ -34,8 +34,13 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
 
     // Check mint and token accounts
 
-    base_mint_info.as_mint()?;
+    let base_mint = base_mint_info.as_mint()?;
     target_mint_info.as_mint()?;
+
+    check_condition(
+        base_mint.decimals() <= 18,
+        "Base mints decimals cannot exceed 18"
+    )?;
 
     check_condition(
         target_mint_info.key.ne(base_mint_info.key),

@@ -20,7 +20,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    solana_program::msg!("Args: {:?}", args);
+    //solana_program::msg!("Args: {:?}", args);
 
     check_signer(authority_info)?;
     check_mut(currency_info)?;

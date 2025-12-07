@@ -1,9 +1,9 @@
 use steel::*;
 use flipcash_api::prelude::*;
 
-pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> ProgramResult {
-    let raw_args = InitializeMetadataIx::try_from_bytes(data)?;
-    let args = raw_args.to_struct()?;
+pub fn process_initialize_metadata(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult {
+    //let raw_args = InitializeMetadataIx::try_from_bytes(data)?;
+    //let args = raw_args.to_struct()?;
 
     let [
         authority_info,
@@ -19,7 +19,7 @@ pub fn process_initialize_metadata(accounts: &[AccountInfo], data: &[u8]) -> Pro
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    solana_program::msg!("Args: {:?}", args);
+    //solana_program::msg!("Args: {:?}", args);
 
     check_signer(authority_info)?;
     check_mut(mint_info)?;

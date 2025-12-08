@@ -160,9 +160,9 @@ pub fn build_sell_tokens_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(seller, true),
-            AccountMeta::new_readonly(pool, false),
+            AccountMeta::new(pool, false),
             AccountMeta::new_readonly(target_mint, false),
-            AccountMeta::new(base_mint, false),
+            AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
             AccountMeta::new(vault_b_pda, false),
             AccountMeta::new(seller_target, false),
@@ -263,5 +263,25 @@ pub fn build_sell_and_deposit_into_vm_ix(
             in_amount,
             min_amount_out,
         }).to_bytes(),
+    }
+}
+
+pub fn build_burn_fees_ix(
+    payer: Pubkey,
+    pool: Pubkey,
+    base_mint: Pubkey,
+) -> Instruction {
+    let (vault_b_pda, _) = find_vault_pda(&pool, &base_mint);
+
+    Instruction {
+        program_id: crate::ID,
+        accounts: vec![
+            AccountMeta::new(payer, true),
+            AccountMeta::new(pool, false),
+            AccountMeta::new(base_mint, false),
+            AccountMeta::new(vault_b_pda, false),
+            AccountMeta::new_readonly(spl_token::id(), false),
+        ],
+        data: BurnFeesIx::from_struct(ParsedBurnFeesIx {}).to_bytes(),
     }
 }

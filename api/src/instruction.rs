@@ -13,7 +13,8 @@ pub enum InstructionType {
     BuyTokensIx,
     SellTokensIx,
     BuyAndDepositIntoVmIx,
-    SellAndDepositIntoVmIx
+    SellAndDepositIntoVmIx,
+    BurnFeesIx,
 }
 
 instruction!(InstructionType, InitializeCurrencyIx);
@@ -23,6 +24,7 @@ instruction!(InstructionType, BuyTokensIx);
 instruction!(InstructionType, SellTokensIx);
 instruction!(InstructionType, BuyAndDepositIntoVmIx);
 instruction!(InstructionType, SellAndDepositIntoVmIx);
+instruction!(InstructionType, BurnFeesIx);
 
 #[derive(Debug)]
 pub struct ParsedInitializeCurrencyIx {
@@ -262,6 +264,27 @@ impl SellAndDepositIntoVmIx {
             in_amount: u64::from_le_bytes(self.in_amount),
             min_amount_out: u64::from_le_bytes(self.min_amount_out),
             vm_memory_index: u16::from_le_bytes(self.vm_memory_index),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ParsedBurnFeesIx {
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct BurnFeesIx {
+}
+
+impl BurnFeesIx {
+    pub fn from_struct(_parsed: ParsedBurnFeesIx) -> Self {
+        Self {
+        }
+    }
+
+    pub fn to_struct(&self) -> ParsedBurnFeesIx {
+        ParsedBurnFeesIx {
         }
     }
 }

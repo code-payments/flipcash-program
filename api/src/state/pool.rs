@@ -14,7 +14,8 @@ pub struct LiquidityPool {
     pub vault_a: Pubkey,          // Vault A (target)
     pub vault_b: Pubkey,          // Vault B (base)                                  
 
-    // Config
+    // Fees
+    pub fees_accumulated: u64,
     pub sell_fee: u16,            // Basis points (0.5% = 50)
 
     // Bump seeds for PDAs

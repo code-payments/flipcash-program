@@ -120,6 +120,15 @@ enum Commands {
         #[arg(long, help = "Amount to sell (in tokens, e.g., 100.50)")]
         amount: f64,
     },
+
+    /// Burns accumulated fees from the pool
+    BurnFees {
+        #[arg(long, help = "Currency mint address")]
+        mint: Pubkey,
+
+        #[arg(long, help = "Base mint address (e.g., USDC mint)")]
+        base_mint: Pubkey,
+    },
 }
 
 #[tokio::main]
@@ -180,6 +189,7 @@ async fn main() -> Result<()> {
             println!("  Mint B (Base): {}", pool.mint_b);
             println!("  Vault A: {}", pool.vault_a);
             println!("  Vault B: {}", pool.vault_b);
+            println!("  Fees Accumulated: {}", pool.fees_accumulated);
             println!("  Sell Fee: {} bps ({}%)", pool.sell_fee, pool.sell_fee as f64 / 100.0);
         }
 
@@ -191,6 +201,11 @@ async fn main() -> Result<()> {
         Commands::Sell { mint, base_mint, amount } => {
             let signature = program::sell(&client, &payer, mint, base_mint, amount).await?;
             println!("Sell transaction successful. Signature: {}", signature);
+        }
+
+        Commands::BurnFees { mint, base_mint } => {
+            let signature = program::burn_fees(&client, &payer, mint, base_mint).await?;
+            println!("Burn fees transaction successful. Signature: {}", signature);
         }
     }
 

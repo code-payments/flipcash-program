@@ -149,6 +149,7 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     pool.mint_b = *base_mint_info.key;
     pool.vault_a = *target_vault_info.key;
     pool.vault_b = *base_vault_info.key;
+    pool.fees_accumulated = 0;
     pool.sell_fee = args.sell_fee;
     pool.bump = args.bump;
     pool.vault_a_bump = args.vault_a_bump;

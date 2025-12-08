@@ -182,7 +182,9 @@ fn buy_common<'info>(
         .checked_sub(tokens_left_raw)
         .ok_or(ProgramError::InvalidArgument)?;
 
-    let current_value_raw = base_vault.amount();
+    let current_value_raw = base_vault.amount()
+        .checked_sub(pool.fees_accumulated)
+        .ok_or(ProgramError::InvalidArgument)?;
 
     let mut in_amount_raw = in_amount_arg;
     if in_amount_raw == 0 {

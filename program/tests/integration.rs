@@ -95,6 +95,7 @@ fn run_integration() {
     assert_eq!(account.mint_b, usdc);
     assert_eq!(account.vault_a, vault_a_pda);
     assert_eq!(account.vault_b, vault_b_pda);
+    assert_eq!(account.fees_accumulated, 0);
     assert_eq!(account.sell_fee, pool.sell_fee);
     assert_eq!(account.bump, pool_bump);
     assert_eq!(account.vault_a_bump, vault_a_bump);
@@ -155,6 +156,10 @@ fn run_integration() {
     assert!(vault_b_balance > 0, "Vault B should have received funds");
     assert!(mint_amt - user_usdc_after_buy - vault_b_balance == 0, "No USDC fees should have been burned");
 
+    let account = svm.get_account(&pool_pda).unwrap();
+    let account = LiquidityPool::unpack(&account.data).unwrap();
+    assert_eq!(account.fees_accumulated, 0, "No fees should have been accumulated on buy");
+
     // SELL
     let sell_amount = as_token(25, darksky_decimals);
     let sell_ix = build_sell_tokens_ix(
@@ -178,7 +183,35 @@ fn run_integration() {
 
     assert!(user_usdc_after_sell > user_usdc_after_buy, "User should have received USDC from sale");
     assert!(vault_a_after_sell > vault_a_balance, "Vault A should have received tokens back");
-    assert!(mint_amt - user_usdc_after_sell - vault_b_after_sell > 0, "USDC fee should have been burned");
+    assert!(mint_amt == user_usdc_after_sell + vault_b_after_sell, "USDC fee should have been burned");
+
+    let account = svm.get_account(&pool_pda).unwrap();
+    let account = LiquidityPool::unpack(&account.data).unwrap();
+    assert!(account.fees_accumulated > 0, "Fees should have been accumulated on sell");
+
+    let fees_before_burn = account.fees_accumulated;
+    let vault_b_balance_before_burn = get_ata_balance(&svm, &vault_b_pda);
+
+    // BURN FEES
+    let random_payer = create_payer(&mut svm);
+    let random_payer_pk = random_payer.pubkey();
+
+    let burn_ix = build_burn_fees_ix(
+        random_payer_pk,
+        pool_pda,
+        usdc,
+    );
+    let blockhash = svm.latest_blockhash();
+    let tx = Transaction::new_signed_with_payer(&[burn_ix], Some(&random_payer_pk), &[&random_payer], blockhash);
+    let res = send_tx(&mut svm, tx);
+    assert!(res.is_ok(), "Burn fees should succeed");
+
+    let vault_b_balance_after_burn = get_ata_balance(&svm, &vault_b_pda);
+    assert_eq!(vault_b_balance_before_burn - vault_b_balance_after_burn, fees_before_burn, "Vault B should have decreased by fees_accumulated");
+
+    let account = svm.get_account(&pool_pda).unwrap();
+    let account = LiquidityPool::unpack(&account.data).unwrap();
+    assert_eq!(account.fees_accumulated, 0, "Fees should be reset to 0 after burn");
 }
 
 #[test]

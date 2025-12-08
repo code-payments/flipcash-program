@@ -96,6 +96,7 @@ flipcash-cli create-currency --name <STRING> --symbol <STRING> --base-mint <PUBK
 - Calls the `initialize` instruction on the Flipcash program.
 - Creates a currency account with metadata (authority, mint, name, symbol).
 - Creates a pool account linked to the currency, including vaults for the target currency and base mint, fee structures (sell fees in basis points), and other metadata.
+- Creates a Metaplex metadata account for on-chain token metdata
 - PDAs (Program-Derived Addresses) are used for deterministic account addresses.
 
 ### get-currency
@@ -112,12 +113,12 @@ flipcash-cli get-currency --mint <PUBKEY>
 
 **Output:**
 - Currency Metadata: Authority, Mint, Name, Symbol.
-- Pool Metadata: Authority, Currency, Mint A (Target), Mint B (Base), Vault A, Vault B, Fees A, Fees B, Buy Fee (bps and %), Sell Fee (bps and %).
+- Pool Metadata: Authority, Currency, Mint A (Target), Mint B (Base), Vault A, Vault B, Fees Accumulated, Sell Fee (bps and %).
 
 **Functionality in Flipcash Program:**
 - Derives the currency PDA and pool PDA from the mint.
 - Fetches and deserializes the currency and pool accounts from the blockchain.
-- Displays on-chain data, including fee rates (e.g., sell_fee in basis points, where 100 bps = 1%).
+- Displays on-chain data, including fees accumulated and fee rates (e.g., sell_fee in basis points, where 100 bps = 1%).
 
 ### buy
 
@@ -164,6 +165,26 @@ flipcash-cli sell --mint <PUBKEY> --base-mint <PUBKEY> --amount <F64>
 - Transfers the equivalent amount of base tokens to the user.
 - Applies sell fees as configured in the pool.
 
+### burn-fees
+
+Burns base tokens (eg. USDC) accumulated for sell fees
+
+**Usage:**
+```
+flipcash-cli burn-fees --mint <PUBKEY> --base-mint <PUBKEY>
+```
+
+**Options:**
+- `--mint <PUBKEY>`: Public key of the currency mint to sell. Required.
+- `--base-mint <PUBKEY>`: Public key of the base mint (e.g., USDC). Required.
+
+**Output:**
+- Prints the transaction signature if successful.
+
+**Functionality in Flipcash Program:**
+- Calls the `burn_fees` instruction on the Flipcash program.
+- Burns base tokens from the pool's vault.
+- Resets fees accumulated to zero.
 
 ## Examples
 
@@ -190,4 +211,9 @@ flipcash-cli sell --mint <PUBKEY> --base-mint <PUBKEY> --amount <F64>
 5. Sell 50 tokens:
    ```
    flipcash-cli sell --mint <CURRENCY_MINT_PUBKEY> --base-mint <USDC_MINT_PUBKEY> --amount 50.0
+   ```
+
+6. Burn fees:
+   ```
+   flipcash-cli burn-fees --mint <CURRENCY_MINT_PUBKEY> --base-mint <USDC_MINT_PUBKEY>
    ```

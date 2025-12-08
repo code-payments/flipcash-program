@@ -22,6 +22,7 @@ pub fn process_instruction(
         InstructionType::SellTokensIx => process_sell_tokens(accounts, data)?,
         InstructionType::BuyAndDepositIntoVmIx => process_buy_and_deposit_into_vm(accounts, data)?,
         InstructionType::SellAndDepositIntoVmIx => process_sell_and_deposit_into_vm(accounts, data)?,
+        InstructionType::BurnFeesIx => process_burn_fees(accounts, data)?,
     }
 
     Ok(())

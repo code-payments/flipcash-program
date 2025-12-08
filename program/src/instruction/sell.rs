@@ -22,7 +22,9 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
 
     //solana_program::msg!("Args: {:?}", args);
 
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
+    check_mut(pool_info)?;
+
+    let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
 
     seller_base_info.as_token_account()?
         .assert(|t| t.owner().eq(seller_info.key))?
@@ -30,7 +32,6 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
 
     let value_after_fee_raw= sell_common(
         seller_info,
-        pool_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -85,19 +86,19 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
 
     //solana_program::msg!("Args: {:?}", args);
 
+    check_mut(pool_info)?;
     check_mut(vm_authority_info)?;
     check_mut(vm_info)?;
     check_mut(vm_memory_info)?;
     check_program(vm_program_info, &VM_PROGRAM_ID)?;
 
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
+    let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
 
     vm_omnibus_info.as_token_account()?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
     let value_after_fee_raw= sell_common(
         seller_info,
-        pool_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -137,7 +138,6 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
 // received for selling tokens to the intended destination.
 fn sell_common<'info>(
     seller_info: &AccountInfo<'info>,
-    pool_info: &AccountInfo<'info>,
     target_mint_info: &AccountInfo<'info>,
     base_mint_info: &AccountInfo<'info>,
     target_vault_info: &AccountInfo<'info>,
@@ -145,13 +145,12 @@ fn sell_common<'info>(
     seller_target_info: &AccountInfo<'info>,
     seller_base_info: &AccountInfo<'info>,
     token_program_info: &AccountInfo<'info>,
-    pool: &LiquidityPool,
+    pool: &mut LiquidityPool,
     in_amount_arg: u64,
     min_amount_out_arg: u64,
 ) -> Result<u64, ProgramError>{
     // Basic checks
     check_signer(seller_info)?;
-    check_mut(base_mint_info)?;
     check_mut(target_vault_info)?;
     check_mut(base_vault_info)?;
     check_mut(seller_target_info)?;
@@ -186,7 +185,9 @@ fn sell_common<'info>(
         .checked_sub(tokens_left_raw)
         .ok_or(ProgramError::InvalidArgument)?;
 
-    let value_left_raw = base_vault.amount();
+    let value_left_raw = base_vault.amount()
+        .checked_sub(pool.fees_accumulated)
+        .ok_or(ProgramError::InvalidArgument)?;
 
     let mut in_amount_raw = in_amount_arg;
     if in_amount_raw == 0 {
@@ -250,21 +251,7 @@ fn sell_common<'info>(
         in_amount_raw,
     )?;
 
-    if fee_amount_raw > 0 {
-        burn_signed_with_bump(
-            base_vault_info,
-            base_mint_info,
-            base_vault_info,
-            token_program_info,
-            fee_amount_raw,
-            &[
-                TREASURY,
-                pool_info.key.as_ref(),
-                base_mint_info.key.as_ref()
-            ],
-            pool.vault_b_bump,
-        )?;
-    }
+    pool.fees_accumulated = pool.fees_accumulated + fee_amount_raw;
 
     Ok(sell_value_after_fee_raw)
 }

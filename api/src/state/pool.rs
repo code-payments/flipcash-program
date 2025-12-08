@@ -22,7 +22,7 @@ pub struct LiquidityPool {
     pub vault_a_bump: u8,
     pub vault_b_bump: u8,
 
-    _padding: [u8; 1],
+    _padding: [u8; 3],
 }
 
 state!(AccountType, LiquidityPool);

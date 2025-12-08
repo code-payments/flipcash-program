@@ -57,6 +57,7 @@ sha2 = "0.10.8"
 litesvm = "0.5.0"
 bytemuck = "1.14.3"
 bytemuck_derive = "1.7.0"
+solana-security-txt = "1.1.2"
 
 [patch.crates-io]
 

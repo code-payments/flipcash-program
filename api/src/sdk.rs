@@ -201,7 +201,7 @@ pub fn build_buy_and_deposit_into_vm_ix(
         accounts: vec![
             AccountMeta::new(buyer, true),
             AccountMeta::new_readonly(pool, false),
-            AccountMeta::new(target_mint, false),
+            AccountMeta::new_readonly(target_mint, false),
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
             AccountMeta::new(vault_b_pda, false),
@@ -245,8 +245,8 @@ pub fn build_sell_and_deposit_into_vm_ix(
         program_id: crate::ID,
         accounts: vec![
             AccountMeta::new(seller, true),
-            AccountMeta::new_readonly(pool, false),
-            AccountMeta::new(target_mint, false),
+            AccountMeta::new(pool, false),
+            AccountMeta::new_readonly(target_mint, false),
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
             AccountMeta::new(vault_b_pda, false),

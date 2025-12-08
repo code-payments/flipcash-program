@@ -13,8 +13,8 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         base_mint_info,
         target_vault_info,
         base_vault_info,
-        seller_target_ata_info,
-        seller_base_ata_info,
+        seller_target_info,
+        seller_base_info,
         token_program_info,
     ] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
@@ -22,7 +22,7 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
 
     //solana_program::msg!("Args: {:?}", args);
 
-    seller_base_ata_info.as_token_account()?
+    seller_base_info.as_token_account()?
         .assert(|t| t.owner().eq(seller_info.key))?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
@@ -33,8 +33,8 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         base_mint_info,
         target_vault_info,
         base_vault_info,
-        seller_target_ata_info,
-        seller_base_ata_info,
+        seller_target_info,
+        seller_base_info,
         token_program_info,
         args.in_amount,
         args.min_amount_out,
@@ -44,7 +44,7 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
     transfer_signed_with_bump(
         base_vault_info,
         base_vault_info,
-        seller_base_ata_info,
+        seller_base_info,
         token_program_info,
         value_after_fee_raw,
         &[
@@ -69,7 +69,7 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
         base_mint_info,
         target_vault_info,
         base_vault_info,
-        seller_target_ata_info,
+        seller_target_info,
         vm_authority_info,
         vm_info,
         vm_memory_info,
@@ -98,7 +98,7 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
         base_mint_info,
         target_vault_info,
         base_vault_info,
-        seller_target_ata_info,
+        seller_target_info,
         vm_omnibus_info,
         token_program_info,
         args.in_amount,
@@ -138,8 +138,8 @@ fn sell_common<'info>(
     base_mint_info: &AccountInfo<'info>,
     target_vault_info: &AccountInfo<'info>,
     base_vault_info: &AccountInfo<'info>,
-    seller_target_ata_info: &AccountInfo<'info>,
-    seller_base_ata_info: &AccountInfo<'info>,
+    seller_target_info: &AccountInfo<'info>,
+    seller_base_info: &AccountInfo<'info>,
     token_program_info: &AccountInfo<'info>,
     in_amount_arg: u64,
     min_amount_out_arg: u64,
@@ -149,16 +149,16 @@ fn sell_common<'info>(
     check_mut(base_mint_info)?;
     check_mut(target_vault_info)?;
     check_mut(base_vault_info)?;
-    check_mut(seller_target_ata_info)?;
-    check_mut(seller_base_ata_info)?;
+    check_mut(seller_target_info)?;
+    check_mut(seller_base_info)?;
     check_program(token_program_info, &spl_token::id())?;
 
     let base_mint = base_mint_info.as_mint()?;
-    let seller_target_ata = seller_target_ata_info.as_token_account()?;
+    let seller_target = seller_target_info.as_token_account()?;
     let target_vault = target_vault_info.as_token_account()?;
     let base_vault = base_vault_info.as_token_account()?;
 
-    seller_target_ata
+    seller_target
         .assert(|t| t.owner().eq(seller_info.key))?
         .assert(|t| t.mint().eq(target_mint_info.key))?;
 
@@ -187,7 +187,7 @@ fn sell_common<'info>(
 
     let mut in_amount_raw = in_amount_arg;
     if in_amount_raw == 0 {
-        in_amount_raw = seller_target_ata.amount();
+        in_amount_raw = seller_target.amount();
     }
 
     let in_amount = to_numeric(in_amount_raw, mint_a_decimals)?;
@@ -241,7 +241,7 @@ fn sell_common<'info>(
 
     transfer(
         seller_info,
-        seller_target_ata_info,
+        seller_target_info,
         target_vault_info,
         token_program_info,
         in_amount_raw,

@@ -13,14 +13,14 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         base_mint_info,
         target_vault_info,
         base_vault_info,
-        buyer_target_ata_info,
-        buyer_base_ata_info,
+        buyer_target_info,
+        buyer_base_info,
         token_program_info,
     ] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
-    buyer_target_ata_info.as_token_account()?
+    buyer_target_info.as_token_account()?
         .assert(|t| t.owner().eq(buyer_info.key))?
         .assert(|t| t.mint().eq(target_mint_info.key))?;
 
@@ -33,8 +33,8 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         base_mint_info,
         target_vault_info,
         base_vault_info,
-        buyer_target_ata_info,
-        buyer_base_ata_info,
+        buyer_target_info,
+        buyer_base_info,
         token_program_info,
         args.in_amount,
         args.min_amount_out,
@@ -44,7 +44,7 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     transfer_signed_with_bump(
         target_vault_info,
         target_vault_info,
-        buyer_target_ata_info,
+        buyer_target_info,
         token_program_info,
         tokens_after_fee_raw,
         &[
@@ -69,7 +69,7 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
         base_mint_info,
         target_vault_info,
         base_vault_info,
-        buyer_base_ata_info,
+        buyer_base_info,
         vm_authority_info,
         vm_info,
         vm_memory_info,
@@ -99,7 +99,7 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
         target_vault_info,
         base_vault_info,
         vm_omnibus_info,
-        buyer_base_ata_info,
+        buyer_base_info,
         token_program_info,
         args.in_amount,
         args.min_amount_out,
@@ -138,8 +138,8 @@ fn buy_common<'info>(
     base_mint_info: &AccountInfo<'info>,
     target_vault_info: &AccountInfo<'info>,
     base_vault_info: &AccountInfo<'info>,
-    buyer_target_ata_info: &AccountInfo<'info>,
-    buyer_base_ata_info: &AccountInfo<'info>,
+    buyer_target_info: &AccountInfo<'info>,
+    buyer_base_info: &AccountInfo<'info>,
     token_program_info: &AccountInfo<'info>,
     in_amount_arg: u64,
     min_amount_out_arg: u64,
@@ -148,16 +148,16 @@ fn buy_common<'info>(
     check_signer(buyer_info)?;
     check_mut(target_vault_info)?;
     check_mut(base_vault_info)?;
-    check_mut(buyer_target_ata_info)?;
-    check_mut(buyer_base_ata_info)?;
+    check_mut(buyer_target_info)?;
+    check_mut(buyer_base_info)?;
     check_program(token_program_info, &spl_token::id())?;
 
     let base_mint = base_mint_info.as_mint()?;
-    let buyer_base_ata = buyer_base_ata_info.as_token_account()?;
+    let buyer_base = buyer_base_info.as_token_account()?;
     let target_vault = target_vault_info.as_token_account()?;
     let base_vault = base_vault_info.as_token_account()?;
 
-    buyer_base_ata
+    buyer_base
         .assert(|t| t.owner().eq(buyer_info.key))?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
@@ -186,7 +186,7 @@ fn buy_common<'info>(
 
     let mut in_amount_raw = in_amount_arg;
     if in_amount_raw == 0 {
-        in_amount_raw = buyer_base_ata.amount();
+        in_amount_raw = buyer_base.amount();
     }
 
     let tokens_left = to_numeric(tokens_left_raw, mint_a_decimals)?;
@@ -235,7 +235,7 @@ fn buy_common<'info>(
 
     transfer(
         buyer_info,
-        buyer_base_ata_info,
+        buyer_base_info,
         base_vault_info,
         token_program_info,
         actual_in_amount_raw,

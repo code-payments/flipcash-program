@@ -111,8 +111,8 @@ pub fn build_buy_tokens_ix(
     base_mint: Pubkey,
     in_amount: u64,
     min_amount_out: u64,
-    buyer_target_ata: Pubkey,
-    buyer_base_ata: Pubkey,
+    buyer_target: Pubkey,
+    buyer_base: Pubkey,
 ) -> Instruction {
     let (vault_a_pda, vault_a_bump) = find_vault_pda(&pool, &target_mint);
     let (vault_b_pda, vault_b_bump) = find_vault_pda(&pool, &base_mint);
@@ -129,8 +129,8 @@ pub fn build_buy_tokens_ix(
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
             AccountMeta::new(vault_b_pda, false),
-            AccountMeta::new(buyer_target_ata, false),
-            AccountMeta::new(buyer_base_ata, false),
+            AccountMeta::new(buyer_target, false),
+            AccountMeta::new(buyer_base, false),
             AccountMeta::new_readonly(spl_token::id(), false),
         ],
         data: BuyTokensIx::from_struct(ParsedBuyTokensIx {
@@ -147,8 +147,8 @@ pub fn build_sell_tokens_ix(
     base_mint: Pubkey,
     in_amount: u64,
     min_amount_out: u64,
-    seller_target_ata: Pubkey,
-    seller_base_ata: Pubkey,
+    seller_target: Pubkey,
+    seller_base: Pubkey,
 ) -> Instruction {
     let (vault_a_pda, vault_a_bump) = find_vault_pda(&pool, &target_mint);
     let (vault_b_pda, vault_b_bump) = find_vault_pda(&pool, &base_mint);
@@ -165,8 +165,8 @@ pub fn build_sell_tokens_ix(
             AccountMeta::new(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
             AccountMeta::new(vault_b_pda, false),
-            AccountMeta::new(seller_target_ata, false),
-            AccountMeta::new(seller_base_ata, false),
+            AccountMeta::new(seller_target, false),
+            AccountMeta::new(seller_base, false),
             AccountMeta::new_readonly(spl_token::id(), false),
         ],
         data: SellTokensIx::from_struct(ParsedSellTokensIx {
@@ -181,7 +181,7 @@ pub fn build_buy_and_deposit_into_vm_ix(
     pool: Pubkey,
     target_mint: Pubkey,
     base_mint: Pubkey,
-    buyer_base_ata: Pubkey,
+    buyer_base: Pubkey,
     vm_authority: Pubkey,
 	vm: Pubkey,
 	vm_memory: Pubkey,
@@ -205,7 +205,7 @@ pub fn build_buy_and_deposit_into_vm_ix(
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
             AccountMeta::new(vault_b_pda, false),
-            AccountMeta::new(buyer_base_ata, false),
+            AccountMeta::new(buyer_base, false),
             AccountMeta::new(vm_authority, true),
             AccountMeta::new(vm, false),
             AccountMeta::new(vm_memory, false),
@@ -226,7 +226,7 @@ pub fn build_sell_and_deposit_into_vm_ix(
     pool: Pubkey,
     target_mint: Pubkey,
     base_mint: Pubkey,
-    seller_target_ata: Pubkey,
+    seller_target: Pubkey,
     vm_authority: Pubkey,
 	vm: Pubkey,
 	vm_memory: Pubkey,
@@ -250,7 +250,7 @@ pub fn build_sell_and_deposit_into_vm_ix(
             AccountMeta::new_readonly(base_mint, false),
             AccountMeta::new(vault_a_pda, false),
             AccountMeta::new(vault_b_pda, false),
-            AccountMeta::new(seller_target_ata, false),
+            AccountMeta::new(seller_target, false),
             AccountMeta::new(vm_authority, true),
             AccountMeta::new(vm, false),
             AccountMeta::new(vm_memory, false),

@@ -210,12 +210,12 @@ impl DiscreteExponentialCurve {
         // Binary search for the step where cumulative value exceeds or equals target
         let mut low = start_step + 1;
         let mut high = DISCRETE_CUMULATIVE_VALUE_TABLE.len() - 1;
-
+        let target_cumulative_raw = target_cumulative.value.as_u128();
         while low < high {
             let mid = (low + high + 1) / 2;
-            let mid_cumulative = UnsignedNumeric::from_scaled_u128(DISCRETE_CUMULATIVE_VALUE_TABLE[mid]);
+            let mid_cumulative = DISCRETE_CUMULATIVE_VALUE_TABLE[mid];
 
-            if mid_cumulative.less_than_or_equal(&target_cumulative) {
+            if mid_cumulative <= target_cumulative_raw {
                 low = mid;
             } else {
                 high = mid - 1;

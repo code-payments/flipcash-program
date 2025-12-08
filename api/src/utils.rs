@@ -74,35 +74,45 @@ pub fn from_symbol(val: &[u8]) -> String {
 }
 
 /// Convert token amount to a UnsignedNumeric value (e.g., 10_000_000 with 6 decimals -> 10.0 UnsignedNumeric)
+#[inline(always)]
 pub fn to_numeric(amount: u64, decimal_places: u8) -> Result<UnsignedNumeric, ProgramError> {
     if decimal_places > 18 {
         return Err(ProgramError::InvalidArgument);
     }
 
-    let scale = 10u64.checked_pow(decimal_places as u32)
-        .ok_or(ProgramError::InvalidArgument)?;
-
     let amount_scaled = UnsignedNumeric::new(amount.into())
         .ok_or(ProgramError::InvalidArgument)?;
 
-    let divisor = UnsignedNumeric::new(scale.into())
-        .ok_or(ProgramError::InvalidArgument)?;
+    let mut divisor= UnsignedNumeric::from_scaled_u128(SCALED_QUARKS_PER_TOKEN);
+    if decimal_places == 6 {
+        divisor = UnsignedNumeric::from_scaled_u128(1_000_000_000_000_000_000_000_000);
+    } else if decimal_places != TOKEN_DECIMALS {
+        let scale = 10u64.checked_pow(decimal_places as u32)
+            .ok_or(ProgramError::InvalidArgument)?;
+        divisor = UnsignedNumeric::new(scale.into())
+            .ok_or(ProgramError::InvalidArgument)?;
+    }
 
     amount_scaled.checked_div(&divisor)
         .ok_or(ProgramError::InvalidArgument)
 }
 
 /// Convert UnsignedNumeric into a token amount value (e.g., 10.0 UnsignedNumeric with 6 decimals -> 10_000_000)
+#[inline(always)]
 pub fn from_numeric(value: UnsignedNumeric, decimal_places: u8) -> Result<u64, ProgramError> {
     if decimal_places > 18 {
         return Err(ProgramError::InvalidArgument);
     }
 
-    let scale = 10u64.checked_pow(decimal_places as u32)
-        .ok_or(ProgramError::InvalidArgument)?;
-
-    let multiplier = UnsignedNumeric::new(scale.into())
-        .ok_or(ProgramError::InvalidArgument)?;
+    let mut multiplier = UnsignedNumeric::from_scaled_u128(SCALED_QUARKS_PER_TOKEN);
+    if decimal_places == 6 {
+        multiplier = UnsignedNumeric::from_scaled_u128(1_000_000_000_000_000_000_000_000);
+    } else if decimal_places != TOKEN_DECIMALS {
+        let scale = 10u64.checked_pow(decimal_places as u32)
+            .ok_or(ProgramError::InvalidArgument)?;
+        multiplier = UnsignedNumeric::new(scale.into())
+            .ok_or(ProgramError::InvalidArgument)?;
+    }
 
     let result = value.checked_mul(&multiplier)
         .and_then(|r| r.to_imprecise())
@@ -112,18 +122,17 @@ pub fn from_numeric(value: UnsignedNumeric, decimal_places: u8) -> Result<u64, P
 }
 
 /// Converts basis points (e.g. 123) into an UnsignedNumeric (e.g. 0.0123)
+#[inline(always)]
 pub fn from_basis_points(bps: u16) -> Result<UnsignedNumeric, ProgramError> {
     let value = UnsignedNumeric::new(bps.into())
         .ok_or(ProgramError::InvalidArgument)?;
-    let divisor = UnsignedNumeric::new(10_000)
-        .ok_or(ProgramError::InvalidArgument)?;
+    let divisor = UnsignedNumeric::from_scaled_u128(10_000_000_000_000_000_000_000);
     value.checked_div(&divisor).ok_or(ProgramError::InvalidArgument)
 }
 
 /// Converts an UnsignedNumeric (e.g. 0.0123) into basis points (e.g. 123)
 pub fn to_basis_points(numeric: &UnsignedNumeric) -> Result<u16, ProgramError> {
-    let multiplier = UnsignedNumeric::new(10_000)
-        .ok_or(ProgramError::InvalidArgument)?;
+    let multiplier = UnsignedNumeric::from_scaled_u128(10_000_000_000_000_000_000_000);
     let bps = numeric.checked_mul(&multiplier)
         .and_then(|r| r.to_imprecise())
         .ok_or(ProgramError::InvalidArgument)?;

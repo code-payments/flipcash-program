@@ -27,6 +27,7 @@ spl-token-2022.workspace = true
 spl-associated-token-account.workspace = true
 bytemuck.workspace = true
 mpl-token-metadata.workspace = true
+brine-fp.workspace = true
 
 # Fix for issues with `build-sbf` rustc being on `1.79-dev`
 bytemuck_derive=">=1.8.1, <1.9.0"

@@ -1,3 +1,4 @@
+use brine_fp::UnsignedNumeric;
 use steel::*;
 use flipcash_api::prelude::*;
 
@@ -151,7 +152,6 @@ fn buy_common<'info>(
     check_mut(buyer_base_ata_info)?;
     check_program(token_program_info, &spl_token::id())?;
 
-    let target_mint = target_mint_info.as_mint()?;
     let base_mint = base_mint_info.as_mint()?;
     let buyer_base_ata = buyer_base_ata_info.as_token_account()?;
     let target_vault = target_vault_info.as_token_account()?;
@@ -172,7 +172,7 @@ fn buy_common<'info>(
         "Invalid vault accounts"
     )?;
 
-    let mint_a_decimals = target_mint.decimals();
+    let mint_a_decimals = TOKEN_DECIMALS;
     let mint_b_decimals = base_mint.decimals();
 
     let tokens_left_raw = target_vault.amount();
@@ -197,7 +197,7 @@ fn buy_common<'info>(
     let uncapped_new_value = current_value
         .checked_add(&in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
-    let max_cumulative_value = UnsignedNumeric::from_scaled_u128(MAX_CUMULATIVE_VALUE);
+    let max_cumulative_value = UnsignedNumeric::from_scaled_u128(SCALED_MAX_CUMULATIVE_VALUE);
     let capped_new_value = if uncapped_new_value.greater_than(&max_cumulative_value) {
         max_cumulative_value
     } else {
@@ -208,7 +208,7 @@ fn buy_common<'info>(
         .ok_or(ProgramError::InvalidArgument)?;
 
     let curve = DiscreteExponentialCurve::default();
-    let zero = to_numeric(0, 0)?;
+    let zero = UnsignedNumeric::zero();
     let new_supply = curve.value_to_tokens(&zero, &capped_new_value)
         .ok_or(ProgramError::InvalidArgument)?;
     let mut tokens_bought = new_supply

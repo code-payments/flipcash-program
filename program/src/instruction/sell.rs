@@ -1,3 +1,4 @@
+use brine_fp::UnsignedNumeric;
 use steel::*;
 use flipcash_api::prelude::*;
 
@@ -152,7 +153,6 @@ fn sell_common<'info>(
     check_mut(seller_base_ata_info)?;
     check_program(token_program_info, &spl_token::id())?;
 
-    let target_mint = target_mint_info.as_mint()?;
     let base_mint = base_mint_info.as_mint()?;
     let seller_target_ata = seller_target_ata_info.as_token_account()?;
     let target_vault = target_vault_info.as_token_account()?;
@@ -173,7 +173,7 @@ fn sell_common<'info>(
         "Invalid vault accounts"
     )?;
 
-    let mint_a_decimals = target_mint.decimals();
+    let mint_a_decimals = TOKEN_DECIMALS;
     let mint_b_decimals = base_mint.decimals();
 
     let tokens_left_raw = target_vault.amount();
@@ -198,7 +198,7 @@ fn sell_common<'info>(
     let fee_rate = from_basis_points(pool.sell_fee)?;
 
     let curve = DiscreteExponentialCurve::default();
-    let zero = to_numeric(0, 0)?;
+    let zero = UnsignedNumeric::zero();
     let new_value = curve.tokens_to_value(&zero, &new_supply)
         .ok_or(ProgramError::InvalidArgument)?;
 

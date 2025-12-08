@@ -12,6 +12,7 @@ pub const MAX_SYMBOL_LEN: usize = 8;
 pub const TOKEN_DECIMALS: u8    = 10; // Decimals for the new currency
 pub const MAX_TOKEN_SUPPLY: u64 = 21_000_000;
 pub const QUARKS_PER_TOKEN: u64 = 10_000_000_000;
+pub const SCALED_QUARKS_PER_TOKEN: u128 = 10_000_000_000_000_000_000_000_000_000;
 
 // Constants for the default curve from $0.01 to $1_000_000 over 21_000_000 tokens
 pub const CURVE_A: u128         = 11400_230149967394933471;
@@ -20,5 +21,5 @@ pub const CURVE_C: u128         = CURVE_B;
 
 // Maximum cumulative value to buy all 21mm tokens (from DISCRETE_CUMULATIVE_VALUE_TABLE)
 // This is the value at Supply: 21000000 with 18 decimal precision
-pub const MAX_CUMULATIVE_VALUE: u128 = 1139973004315032342581716939500;
+pub const SCALED_MAX_CUMULATIVE_VALUE: u128 = 1139973004315032342581716939500;
 

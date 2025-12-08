@@ -1491,6 +1491,7 @@ dependencies = [
 name = "flipcash-program"
 version = "0.1.0"
 dependencies = [
+ "brine-fp",
  "bytemuck",
  "bytemuck_derive",
  "flipcash-api",

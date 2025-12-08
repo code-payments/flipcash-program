@@ -20,15 +20,16 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         return Err(ProgramError::NotEnoughAccountKeys);
     };
 
+    //solana_program::msg!("Args: {:?}", args);
+
+    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
+
     buyer_target_info.as_token_account()?
         .assert(|t| t.owner().eq(buyer_info.key))?
         .assert(|t| t.mint().eq(target_mint_info.key))?;
 
-    //solana_program::msg!("Args: {:?}", args);
-
     let tokens_after_fee_raw= buy_common(
         buyer_info,
-        pool_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -36,11 +37,11 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
         buyer_target_info,
         buyer_base_info,
         token_program_info,
+        pool,
         args.in_amount,
         args.min_amount_out,
     )?;
 
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
     transfer_signed_with_bump(
         target_vault_info,
         target_vault_info,
@@ -88,12 +89,13 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
     check_mut(vm_memory_info)?;
     check_program(vm_program_info, &VM_PROGRAM_ID)?;
 
+    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
+
     vm_omnibus_info.as_token_account()?
         .assert(|t| t.mint().eq(target_mint_info.key))?;
 
     let tokens_after_fee_raw= buy_common(
         buyer_info,
-        pool_info,
         target_mint_info,
         base_mint_info,
         target_vault_info,
@@ -101,11 +103,11 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
         vm_omnibus_info,
         buyer_base_info,
         token_program_info,
+        pool,
         args.in_amount,
         args.min_amount_out,
     )?;
 
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
     deposit_into_vm(
         vm_authority_info,
         vm_info,
@@ -133,7 +135,6 @@ pub fn process_buy_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) ->
 // tokens to the intended destination.
 fn buy_common<'info>(
     buyer_info: &AccountInfo<'info>,
-    pool_info: &AccountInfo<'info>,
     target_mint_info: &AccountInfo<'info>,
     base_mint_info: &AccountInfo<'info>,
     target_vault_info: &AccountInfo<'info>,
@@ -141,6 +142,7 @@ fn buy_common<'info>(
     buyer_target_info: &AccountInfo<'info>,
     buyer_base_info: &AccountInfo<'info>,
     token_program_info: &AccountInfo<'info>,
+    pool: &LiquidityPool,
     in_amount_arg: u64,
     min_amount_out_arg: u64,
 ) -> Result<u64, ProgramError>{
@@ -160,8 +162,6 @@ fn buy_common<'info>(
     buyer_base
         .assert(|t| t.owner().eq(buyer_info.key))?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
-
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
 
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,

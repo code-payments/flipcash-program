@@ -22,6 +22,8 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
 
     //solana_program::msg!("Args: {:?}", args);
 
+    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
+
     seller_base_info.as_token_account()?
         .assert(|t| t.owner().eq(seller_info.key))?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
@@ -36,11 +38,11 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
         seller_target_info,
         seller_base_info,
         token_program_info,
+        pool,
         args.in_amount,
         args.min_amount_out,
     )?;
 
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
     transfer_signed_with_bump(
         base_vault_info,
         base_vault_info,
@@ -88,6 +90,8 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
     check_mut(vm_memory_info)?;
     check_program(vm_program_info, &VM_PROGRAM_ID)?;
 
+    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
+
     vm_omnibus_info.as_token_account()?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
@@ -101,11 +105,11 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
         seller_target_info,
         vm_omnibus_info,
         token_program_info,
+        pool,
         args.in_amount,
         args.min_amount_out,
     )?;
 
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
     deposit_into_vm(
         vm_authority_info,
         vm_info,
@@ -141,6 +145,7 @@ fn sell_common<'info>(
     seller_target_info: &AccountInfo<'info>,
     seller_base_info: &AccountInfo<'info>,
     token_program_info: &AccountInfo<'info>,
+    pool: &LiquidityPool,
     in_amount_arg: u64,
     min_amount_out_arg: u64,
 ) -> Result<u64, ProgramError>{
@@ -161,8 +166,6 @@ fn sell_common<'info>(
     seller_target
         .assert(|t| t.owner().eq(seller_info.key))?
         .assert(|t| t.mint().eq(target_mint_info.key))?;
-
-    let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
 
     check_condition(
         pool.mint_a == *target_mint_info.key && pool.mint_b == *base_mint_info.key,

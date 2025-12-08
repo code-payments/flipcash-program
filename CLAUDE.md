@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Flipcash is a Solana program for creating custom currencies with automated market-making via an exponential bonding curve. Each currency has its own SPL token mint and liquidity pool backed by a base mint (typically USDC or similar stablecoin).
 
-**Program ID:** `ccZR1qzNyMaHDB47PkqDZVpNdimji7wJf65zyfGR3FJ`
+**Program ID:** `ccJYP5gjZqcEHaphcxAZvkxCrnTVfYMjyhSYkpQtf8Z`
 
 ## Workspace Structure
 

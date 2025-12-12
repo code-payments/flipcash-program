@@ -3,7 +3,7 @@ members = ["api", "program", "client", "cli"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://flipcash.com"
@@ -13,8 +13,8 @@ readme = "./README.md"
 keywords = ["solana", "crypto", "wallet"]
 
 [workspace.dependencies]
-flipcash-api = { version = "0.1.0", path = "./api" }
-flipcash-client = { version = "0.1.0", path = "./client" }
+flipcash-api = { version = "1.0.0", path = "./api" }
+flipcash-client = { version = "1.0.0", path = "./client" }
 
 anyhow = "1.0"
 brine-fp = "0.1.0"

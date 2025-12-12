@@ -1431,7 +1431,7 @@ dependencies = [
 
 [[package]]
 name = "flipcash-api"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "brine-fp",
  "bytemuck",
@@ -1446,7 +1446,7 @@ dependencies = [
 
 [[package]]
 name = "flipcash-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1466,7 +1466,7 @@ dependencies = [
 
 [[package]]
 name = "flipcash-client"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "base64 0.13.1",
@@ -1495,7 +1495,7 @@ dependencies = [
 
 [[package]]
 name = "flipcash-program"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "brine-fp",
  "bytemuck",

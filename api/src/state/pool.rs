@@ -3,7 +3,7 @@ use steel::*;
 use super::AccountType;
 use crate::state;
 
-/// Liquidity pool account that manages the bonding curve AMM for a currency.
+/// Liquidity pool account that manages the discrete exponential bonding curve for a currency.
 /// PDA seeds: ["pool", currency_pubkey]
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable, ShankAccount)]

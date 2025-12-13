@@ -1,0 +1,841 @@
+{
+  "version": "1.0.0",
+  "name": "flipcash_api",
+  "instructions": [
+    {
+      "name": "Unknown",
+      "accounts": [],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 0
+      }
+    },
+    {
+      "name": "InitializeCurrencyIx",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Authority that owns the currency"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "SPL token mint PDA"
+          ]
+        },
+        {
+          "name": "currency",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Currency config PDA"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rentSysvar",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent sysvar"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 1
+      }
+    },
+    {
+      "name": "InitializePoolIx",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Authority that owns the currency"
+          ]
+        },
+        {
+          "name": "currency",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Currency config account"
+          ]
+        },
+        {
+          "name": "currencyMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Currency SPL token mint"
+          ]
+        },
+        {
+          "name": "baseMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Base token mint (eg. USDF or USDC)"
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Liquidity pool PDA"
+          ]
+        },
+        {
+          "name": "currencyVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token vault PDA for currency tokens"
+          ]
+        },
+        {
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Token vault PDA for base tokens"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rentSysvar",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent sysvar"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 2
+      }
+    },
+    {
+      "name": "InitializeMetadataIx",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Authority that owns the currency"
+          ]
+        },
+        {
+          "name": "currency",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Currency config account"
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Currency SPL token mint"
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Metaplex metadata PDA"
+          ]
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Metaplex token metadata program"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "System program"
+          ]
+        },
+        {
+          "name": "rentSysvar",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Rent sysvar"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 3
+      }
+    },
+    {
+      "name": "BuyTokensIx",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Buyer wallet"
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Liquidity pool account"
+          ]
+        },
+        {
+          "name": "currencyMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Currency SPL token mint"
+          ]
+        },
+        {
+          "name": "baseMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Base token mint"
+          ]
+        },
+        {
+          "name": "currencyVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Currency token vault"
+          ]
+        },
+        {
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Base token vault"
+          ]
+        },
+        {
+          "name": "buyerCurrencyTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Buyer's currency token account"
+          ]
+        },
+        {
+          "name": "buyerBaseTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Buyer's base token account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 4
+      }
+    },
+    {
+      "name": "SellTokensIx",
+      "accounts": [
+        {
+          "name": "seller",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Seller wallet"
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Liquidity pool account"
+          ]
+        },
+        {
+          "name": "currencyMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Currency SPL token mint"
+          ]
+        },
+        {
+          "name": "baseMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Base token mint"
+          ]
+        },
+        {
+          "name": "currencyVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Currency token vault"
+          ]
+        },
+        {
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Base token vault"
+          ]
+        },
+        {
+          "name": "sellerCurrencyTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Seller's currency token account"
+          ]
+        },
+        {
+          "name": "sellerBaseTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Seller's base token account"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 5
+      }
+    },
+    {
+      "name": "BuyAndDepositIntoVmIx",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Buyer wallet"
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Liquidity pool account"
+          ]
+        },
+        {
+          "name": "currencyMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Currency SPL token mint"
+          ]
+        },
+        {
+          "name": "baseMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Base token mint"
+          ]
+        },
+        {
+          "name": "currencyVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Currency token vault"
+          ]
+        },
+        {
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Base token vault"
+          ]
+        },
+        {
+          "name": "buyerBaseTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Buyer's base token account"
+          ]
+        },
+        {
+          "name": "vmAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM authority account"
+          ]
+        },
+        {
+          "name": "vm",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM account"
+          ]
+        },
+        {
+          "name": "vmMemory",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM memory account"
+          ]
+        },
+        {
+          "name": "vmOmnibus",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM omnibus account"
+          ]
+        },
+        {
+          "name": "vtaOwner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Virtual token account owner"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        },
+        {
+          "name": "vmProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "OCP VM program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 6
+      }
+    },
+    {
+      "name": "SellAndDepositIntoVmIx",
+      "accounts": [
+        {
+          "name": "seller",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Seller wallet"
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Liquidity pool account"
+          ]
+        },
+        {
+          "name": "currencyMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Currency SPL token mint"
+          ]
+        },
+        {
+          "name": "baseMint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Base token mint"
+          ]
+        },
+        {
+          "name": "currencyVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Currency token vault"
+          ]
+        },
+        {
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Base token vault"
+          ]
+        },
+        {
+          "name": "sellerCurrencyTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Seller's currency token account"
+          ]
+        },
+        {
+          "name": "vmAuthority",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM authority account"
+          ]
+        },
+        {
+          "name": "vm",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM account"
+          ]
+        },
+        {
+          "name": "vmMemory",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM memory account"
+          ]
+        },
+        {
+          "name": "vmOmnibus",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "VM omnibus token account"
+          ]
+        },
+        {
+          "name": "vtaOwner",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Virtual token account owner"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        },
+        {
+          "name": "vmProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "OCP VM program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 7
+      }
+    },
+    {
+      "name": "BurnFeesIx",
+      "accounts": [
+        {
+          "name": "payer",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Transaction payer"
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Liquidity pool account"
+          ]
+        },
+        {
+          "name": "baseMint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Base token mint"
+          ]
+        },
+        {
+          "name": "baseVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Base token vault"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL token program"
+          ]
+        }
+      ],
+      "args": [],
+      "discriminant": {
+        "type": "u8",
+        "value": 8
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "name": "CurrencyConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint",
+            "type": "publicKey"
+          },
+          {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "seed",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "mintBump",
+            "type": "u8"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LiquidityPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "currency",
+            "type": "publicKey"
+          },
+          {
+            "name": "mintA",
+            "type": "publicKey"
+          },
+          {
+            "name": "mintB",
+            "type": "publicKey"
+          },
+          {
+            "name": "vaultA",
+            "type": "publicKey"
+          },
+          {
+            "name": "vaultB",
+            "type": "publicKey"
+          },
+          {
+            "name": "feesAccumulated",
+            "type": "u64"
+          },
+          {
+            "name": "sellFee",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vaultABump",
+            "type": "u8"
+          },
+          {
+            "name": "vaultBBump",
+            "type": "u8"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                3
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "AccountType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "CurrencyConfig"
+          },
+          {
+            "name": "LiquidityPool"
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "origin": "shank",
+    "address": "ccJYP5gjZqcEHaphcxAZvkxCrnTVfYMjyhSYkpQtf8Z"
+  }
+}

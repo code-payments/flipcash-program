@@ -32,3 +32,6 @@ validator:
 	  --url https://api.mainnet-beta.solana.com
 
 local: clean build validator
+
+idl:
+	shank idl -o idl -p ccJYP5gjZqcEHaphcxAZvkxCrnTVfYMjyhSYkpQtf8Z -r api

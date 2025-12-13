@@ -35,3 +35,4 @@ local: clean build validator
 
 idl:
 	shank idl -o idl -p ccJYP5gjZqcEHaphcxAZvkxCrnTVfYMjyhSYkpQtf8Z -r api
+	mv idl/flipcash_api.json idl/flipcash.json

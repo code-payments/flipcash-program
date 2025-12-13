@@ -15,7 +15,7 @@ pub enum InstructionType {
     #[account(5, name = "rent_sysvar", desc = "Rent sysvar")]
     InitializeCurrencyIx,
 
-    #[account(0, signer, name = "authority", desc = "Authority that owns the currency")]
+    #[account(0, signer, writable, name = "authority", desc = "Authority that owns the currency")]
     #[account(1, name = "currency", desc = "Currency config account")]
     #[account(2, writable, name = "currency_mint", desc = "Currency SPL token mint")]
     #[account(3, name = "base_mint", desc = "Base token mint (eg. USDF or USDC)")]
@@ -27,7 +27,7 @@ pub enum InstructionType {
     #[account(9, name = "rent_sysvar", desc = "Rent sysvar")]
     InitializePoolIx,
 
-    #[account(0, signer, name = "authority", desc = "Authority that owns the currency")]
+    #[account(0, signer, writable, name = "authority", desc = "Authority that owns the currency")]
     #[account(1, name = "currency", desc = "Currency config account")]
     #[account(2, writable, name = "mint", desc = "Currency SPL token mint")]
     #[account(3, writable, name = "metadata", desc = "Metaplex metadata PDA")]
@@ -69,7 +69,7 @@ pub enum InstructionType {
     #[account(7, writable, name = "vm_authority", desc = "VM authority account")]
     #[account(8, writable, name = "vm", desc = "VM account")]
     #[account(9, writable, name = "vm_memory", desc = "VM memory account")]
-    #[account(10, name = "vm_omnibus", desc = "VM omnibus account")]
+    #[account(10, writable, name = "vm_omnibus", desc = "VM omnibus account")]
     #[account(11, name = "vta_owner", desc = "Virtual token account owner")]
     #[account(12, name = "token_program", desc = "SPL token program")]
     #[account(13, name = "vm_program", desc = "OCP VM program")]
@@ -85,7 +85,7 @@ pub enum InstructionType {
     #[account(7, writable, name = "vm_authority", desc = "VM authority account")]
     #[account(8, writable, name = "vm", desc = "VM account")]
     #[account(9, writable, name = "vm_memory", desc = "VM memory account")]
-    #[account(10, name = "vm_omnibus", desc = "VM omnibus token account")]
+    #[account(10, writable, name = "vm_omnibus", desc = "VM omnibus token account")]
     #[account(11, name = "vta_owner", desc = "Virtual token account owner")]
     #[account(12, name = "token_program", desc = "SPL token program")]
     #[account(13, name = "vm_program", desc = "OCP VM program")]

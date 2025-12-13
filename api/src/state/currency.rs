@@ -1,15 +1,17 @@
+use shank::ShankAccount;
 use steel::*;
 use super::AccountType;
 use crate::state;
-use crate::consts::*;
 
+/// Currency configuration account that stores metadata for a custom currency.
+/// PDA seeds: ["currency", mint_pubkey]
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
+#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable, ShankAccount)]
 pub struct CurrencyConfig {
     pub authority: Pubkey,              // Can set fees, etc.
     pub mint: Pubkey,                   // SPL Mint A (target)
-    pub name: [u8; MAX_NAME_LEN],       // Currency name (target)
-    pub symbol: [u8; MAX_SYMBOL_LEN],   // Currency symbol (target)
+    pub name: [u8; 32],                 // Currency name (target)
+    pub symbol: [u8; 8],                // Currency symbol (target)
     pub seed: [u8; 32],                 // Seed for PDA (target)
 
     // Bump seeds for PDAs

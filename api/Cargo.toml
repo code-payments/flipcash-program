@@ -20,6 +20,7 @@ spl-token.workspace = true
 uint.workspace = true
 brine-fp.workspace = true
 mpl-token-metadata.workspace = true
+shank = "0.4.2"
 
 [dev-dependencies]
 solana-sdk = "2.1.0"

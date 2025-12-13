@@ -1,9 +1,12 @@
+use shank::ShankAccount;
 use steel::*;
 use super::AccountType;
 use crate::state;
 
+/// Liquidity pool account that manages the bonding curve AMM for a currency.
+/// PDA seeds: ["pool", currency_pubkey]
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable)]
+#[derive(Clone, Copy, Debug, PartialEq, Pod, Zeroable, ShankAccount)]
 pub struct LiquidityPool {
     pub authority: Pubkey,        // Can set fees, etc.
     pub currency: Pubkey,         // Currency for this pool

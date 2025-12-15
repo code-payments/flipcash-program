@@ -1,0 +1,12 @@
+{
+  "name": "flipcash-idl-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for updating Flipcash IDL discriminators",
+  "scripts": {
+    "update-discriminators": "bun ./scripts/update-discriminators.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

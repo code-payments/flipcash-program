@@ -1,19 +1,11 @@
 #![allow(unexpected_cfgs)]
 use steel::*;
 use flipcash_api::prelude::*;
-use solana_security_txt::security_txt;
 
 pub mod instruction;
 use instruction::*;
 
-security_txt! {
-    name: "Flipcash Currency Creator Program",
-    project_url: "https://flipcash.com",
-    contacts: "email:security@flipcash.com",
-    policy: "https://github.com/code-payments/flipcash-program/blob/main/SECURITY.md",
-    source_code: "https://github.com/code-payments/flipcash-program",
-    auditors: "Sec3"
-}
+mod security;
 
 pub fn process_instruction(
     program_id: &Pubkey,

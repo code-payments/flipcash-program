@@ -1,4 +1,4 @@
-# Flipcash Currency Creator Program
+# Flipcash Reserve Contract
 ![license][license-image]
 ![version][version-image]
 
@@ -6,7 +6,7 @@
 [license-image]: https://img.shields.io/badge/license-MIT-blue.svg?style=flat
 
 
-The Flipcash Currency Creator program provides the following core features:
+The Flipcash Reserve Contract provides the following core features:
 
 - **Currency Initialization:** Creates a new SPL Token mint for a custom currency, with metadata stored in a PDA-derived account.
 - **Pool Creation:** Sets up a liquidity pool linked to the currency, backed by a base mint. The pool manages two vaults (one for the currency, one for the base), and sell fee rates (in basis points).

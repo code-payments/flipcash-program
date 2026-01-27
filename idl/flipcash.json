@@ -444,7 +444,7 @@
   "metadata": {
     "name": "Flipcash Reserve Contract",
     "version": "1.0.0",
-    "spec": "1.0.0",
+    "spec": "0.1.0",
     "description": "The Reserve Contract for the Flipcash Currency Creator Program"
   },
   "types": [

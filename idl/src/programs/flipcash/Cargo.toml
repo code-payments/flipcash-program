@@ -1,7 +1,7 @@
 [package]
 name = "flipcash"
 version = "1.0.0"
-description = "Flipcash Currency Creator Program"
+description = "The Reserve Contract for the Flipcash Currency Creator Program"
 edition = "2021"
 
 [lib]

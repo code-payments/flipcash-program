@@ -114,7 +114,7 @@ flipcash-cli create-currency --name <STRING> --symbol <STRING> --base-mint <PUBK
 - Calls the `initialize` instruction on the Flipcash program
 - Creates a currency account with metadata (authority, mint, name, symbol)
 - Creates a pool account linked to the currency, including vaults for the target currency and base mint, fee structures (sell fees in basis points), and other metadata
-- Creates a Metaplex metadata account for on-chain token metdata
+- Creates a Metaplex metadata account for on-chain token metadata
 - PDAs (Program-Derived Addresses) are used for deterministic account addresses
 
 ### get-currency

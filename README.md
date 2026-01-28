@@ -8,15 +8,17 @@
 
 ## The Flipcash Currency Creator
 
-Flipcash is the only platform for creating digital currencies that can be immediately used as real money. The moment a currency is created it can be sent, spent, or handed to someone as simply as physical cash.
+Flipcash is the only platform for creating digital currencies that are immediately used as real money. The moment a currency is created it can be sent, spent, or handed to someone as simply as physical cash. Every currency has guaranteed liquidity from day one, which is managed by the Reserve Contract.
 
 ## The Reserve Contract
 
-Every Flipcash currency launches with a Reserve, an on-chain pool of capital that backs a currency. Capital is contributed as USDF, a fully backed, 1:1 USD stablecoin. 
+Every Flipcash currency is governed by the Reserve Contract, an on-chain contract that manages each currency’s supply and liquidity.
 
-The Reserve is implemented as a smart contract (the “Reserve Contract”) that trustlessly custodies USDF and uses it to buy coins when users wish to sell. Because trades happen directly with the Reserve, the currency can always be bought and sold for a known price, without relying on market makers, order books, or liquidity providers.
+When a new currency is created, 21 million coins are minted and deposited into the Reserve Contract. Each currency has a fixed supply of 21 million coins, so there will never be more. The Reserve Contract then sells coins on a predefined pricing curve, accepting payment in USDF, a fully backed 1:1 USD stablecoin managed in partnership with Coinbase. 
 
-By tying every coin directly to capital held in the Reserve, the currency remains redeemable and predictable at all times. This makes it easier to hold, spend, or convert when needed, and helps the currency behave more like money than a purely speculative asset.
+The first coin sells for $0.01. With every $11,400 of coins purchased, the price per coin increases by roughly one penny until the 21 millionth coin sells for $1 million.
+
+The Reserve Contract custodies the supply of each currency that hasn’t yet been sold. It also custodies the USDF received as payment for each coin, using that USDF to also buy coins on the same pricing curve. In doing so, the Reserve Contract acts as a guaranteed buyer, ensuring continuous liquidity without relying on market makers, order books, or liquidity providers, all in a fully trustless manner.
 
 ## Audits
 

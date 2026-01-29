@@ -17,7 +17,6 @@ flipcash-api = { version = "1.0.0", path = "./api" }
 flipcash-client = { version = "1.0.0", path = "./client" }
 
 anyhow = "1.0"
-indexmap = "=2.6.0"
 brine-fp = "0.1.0"
 mpl-token-metadata = "5.1"
 num_enum = "0.7"

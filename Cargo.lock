@@ -1502,6 +1502,7 @@ dependencies = [
  "bytemuck_derive",
  "flipcash-api",
  "half",
+ "indexmap",
  "litesvm",
  "litesvm-token",
  "mpl-token-metadata",
@@ -2063,9 +2064,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.11.0"
+version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2481980430f9f78649238835720ddccc57e52df14ffce1c6f37391d61b563e9"
+checksum = "8c9c992b02b5b4c94ea26e32fe5bccb7aa7d9f390ab5c1221ff895bc7ea8b652"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",

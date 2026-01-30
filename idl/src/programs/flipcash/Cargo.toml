@@ -1,12 +1,12 @@
 [package]
-name = "flipcash"
+name = "flipcash-idl"
 version = "1.0.0"
 description = "The Reserve Contract for the Flipcash Currency Creator Program"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "flipcash"
+name = "flipcash_idl"
 
 [features]
 default = []

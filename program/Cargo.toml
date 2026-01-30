@@ -33,7 +33,6 @@ solana-security-txt.workspace = true
 # Fix for issues with `build-sbf` rustc being on `1.79-dev`
 bytemuck_derive=">=1.8.1, <1.9.0"
 half = "=2.4.1"
-indexmap = "=2.7.1"
 
 [dev-dependencies]
 litesvm = "0.5.0"

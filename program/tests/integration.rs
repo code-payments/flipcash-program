@@ -226,7 +226,7 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let sell_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
+    let sell_fee = to_basis_points(&to_numeric(1, 2).unwrap()).unwrap();
 
     let currency = TestCurrency {
         name: "dark-sky".to_string(),
@@ -360,9 +360,15 @@ fn run_buy_and_sell_simulation_up_and_down_curve() {
     let vault_a_balance = get_ata_balance(&svm, &vault_a_pda);
     let vault_b_balance = get_ata_balance(&svm, &vault_b_pda);
     assert!(user_mint_balance == 0, "User should have no DSKY");
-    assert!(user_usdc_balance == mint_amt, "User should have all USDC");
+    assert!(user_usdc_balance < mint_amt, "User should have less USDC due to sell fees");
     assert!(vault_a_balance == as_token(MAX_TOKEN_SUPPLY, TOKEN_DECIMALS), "Vault A should have all DSKY");
-    assert!(vault_b_balance == 0, "Vault B should have no USDC");
+    assert!(vault_b_balance > 0, "Vault B should retain accumulated fees");
+    assert!(user_usdc_balance + vault_b_balance == mint_amt, "Total USDC minted should be held by user or in fees");
+
+    let account = svm.get_account(&pool_pda).unwrap();
+    let account = LiquidityPool::unpack(&account.data).unwrap();
+    assert!(account.fees_accumulated > 0, "Fees should have been accumulated from sells");
+    assert_eq!(vault_b_balance, account.fees_accumulated, "Vault B should only contain accumulated fees");
 }
 
 #[test]
@@ -377,7 +383,7 @@ fn run_buy_and_sell_simulation_random() {
 
     let usdc = create_mint(&mut svm, &payer, &payer_pk, usdc_decimals);
 
-    let sell_fee = to_basis_points(&to_numeric(0, 2).unwrap()).unwrap();
+    let sell_fee = to_basis_points(&to_numeric(1, 2).unwrap()).unwrap();
 
     let currency = TestCurrency {
         name: "dark-sky".to_string(),
@@ -425,7 +431,7 @@ fn run_buy_and_sell_simulation_random() {
     let user_mint_ata = create_ata(&mut svm, &payer, &mint_pda, &user_pk);
     let user_usdc_ata = create_ata(&mut svm, &payer, &usdc, &user_pk);
 
-    let mint_amt = as_token(1_139_973_004_315, usdc_decimals);
+    let mint_amt = as_token(2 * 1_139_973_004_315, usdc_decimals);
     let res = mint_to(&mut svm, &user, &usdc, &payer, &user_usdc_ata, mint_amt);
     assert!(res.is_ok());
 
@@ -475,10 +481,15 @@ fn run_buy_and_sell_simulation_random() {
         println!("User USDC balance: {:?}", user_usdc_balance);
         println!("Vault USDC balance: {:?}", vault_usdc_balance);
 
+        // Subtract accumulated fees from vault balance for curve precision checks
+        let account = svm.get_account(&pool_pda).unwrap();
+        let pool_state = LiquidityPool::unpack(&account.data).unwrap();
+        let vault_usdc_excluding_fees = vault_usdc_balance - pool_state.fees_accumulated;
+
         let mut difference;
         let curve = DiscreteExponentialCurve::default();
         let zero_supply = to_numeric(0, TOKEN_DECIMALS).unwrap();
-        let usdc_buy_amount = to_numeric(vault_usdc_balance, usdc_decimals).unwrap();
+        let usdc_buy_amount = to_numeric(vault_usdc_excluding_fees, usdc_decimals).unwrap();
         let expected_token_supply = curve.value_to_tokens(&zero_supply, &usdc_buy_amount).unwrap();
         let expected_quark_supply = from_numeric(expected_token_supply, TOKEN_DECIMALS).unwrap();
         if expected_quark_supply > user_mint_balance {
@@ -495,10 +506,10 @@ fn run_buy_and_sell_simulation_random() {
         let current_supply = to_numeric(user_mint_balance, TOKEN_DECIMALS).unwrap();
         let expected_locked_usdc = curve.tokens_to_value(&zero_supply, &current_supply).unwrap();
         let expected_locked_usdc_quarks = from_numeric(expected_locked_usdc, usdc_decimals).unwrap();
-        if expected_locked_usdc_quarks > vault_usdc_balance {
-            difference = expected_locked_usdc_quarks - vault_usdc_balance;
+        if expected_locked_usdc_quarks > vault_usdc_excluding_fees {
+            difference = expected_locked_usdc_quarks - vault_usdc_excluding_fees;
         } else {
-            difference = vault_usdc_balance - expected_locked_usdc_quarks;
+            difference = vault_usdc_excluding_fees - expected_locked_usdc_quarks;
         }
         if difference > max_usdc_locked_difference {
             max_usdc_locked_difference = difference

@@ -78,8 +78,8 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
     )?;
 
     check_condition(
-        args.sell_fee < 10000,
-        "Sell fee must be less than 10,000 bps"
+        args.sell_fee == 100,
+        "Sell fee must be 1% (100 bps)"
     )?;
 
     create_token_account(

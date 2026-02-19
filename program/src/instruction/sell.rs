@@ -197,27 +197,28 @@ fn sell_common<'info>(
     let in_amount = to_numeric(in_amount_raw, mint_a_decimals)?;
     let new_supply = to_numeric(supply_from_bonding, mint_a_decimals)?
         .checked_sub(&in_amount)
-        .unwrap();
+        .ok_or(ProgramError::InvalidArgument)?;
     let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
-    let fee_rate = from_basis_points(pool.sell_fee)?;
+    let after_fee_rate = from_basis_points(10000 - pool.sell_fee)?;
 
     let curve = DiscreteExponentialCurve::default();
     let zero = UnsignedNumeric::zero();
     let new_value = curve.tokens_to_value(&zero, &new_supply)
         .ok_or(ProgramError::InvalidArgument)?;
 
-    let mut total_sell_value = value_left
-        .checked_sub(&new_value)
-        .ok_or(ProgramError::InvalidArgument)?;
+    let mut total_sell_value = if new_value.less_than(&value_left) {
+        value_left
+            .checked_sub(&new_value)
+            .ok_or(ProgramError::InvalidArgument)?
+    } else {
+        UnsignedNumeric::zero()
+    };
     if total_sell_value.greater_than(&value_left) {
         total_sell_value = value_left
     }
 
-    let fee_amount = total_sell_value
-        .checked_mul(&fee_rate)
-        .ok_or(ProgramError::InvalidArgument)?;
     let sell_value_after_fee = total_sell_value
-        .checked_sub(&fee_amount)
+        .checked_mul(&after_fee_rate)
         .ok_or(ProgramError::InvalidArgument)?;
 
     //solana_program::msg!("selling: {}", in_amount.to_string());
@@ -225,8 +226,15 @@ fn sell_common<'info>(
     //solana_program::msg!("fee: ${}", fee_amount.to_string());
     //solana_program::msg!("value_after_fee: ${}", sell_value_after_fee.to_string());
 
-    let fee_amount_raw = from_numeric(fee_amount, mint_b_decimals)?;
-    let sell_value_after_fee_raw = from_numeric(sell_value_after_fee, mint_b_decimals)?;
+    let total_sell_value_raw = from_numeric(total_sell_value, mint_b_decimals)?;
+    let mut sell_value_after_fee_raw = total_sell_value_raw;
+    let mut fee_amount_raw = 0;
+    if pool.sell_fee > 0 {
+        sell_value_after_fee_raw = from_numeric(sell_value_after_fee, mint_b_decimals)?;
+        fee_amount_raw = total_sell_value_raw
+            .checked_sub(sell_value_after_fee_raw)
+            .ok_or(ProgramError::InvalidArgument)?;
+    }
 
     check_condition(
         sell_value_after_fee_raw > 0,
@@ -251,7 +259,9 @@ fn sell_common<'info>(
         in_amount_raw,
     )?;
 
-    pool.fees_accumulated = pool.fees_accumulated + fee_amount_raw;
+    pool.fees_accumulated = pool.fees_accumulated
+        .checked_add(fee_amount_raw)
+        .ok_or(ProgramError::ArithmeticOverflow)?;
 
     Ok(sell_value_after_fee_raw)
 }

@@ -31,13 +31,13 @@ The Reserve Contract custodies the supply of each currency that hasn’t yet bee
 The Reserve Contract provides the following core features:
 
 - **Currency Initialization:** Creates a new SPL Token mint for a custom currency with Metaplex metadata
-- **Pool Creation:** Creates a liquidity pool linked to the currency, backed by a base mint. The pool manages two vaults (one for the currency, one for the base), and sell fee rates (in basis points)
+- **Pool Creation:** Creates a liquidity pool linked to the currency, backed by USDF. The pool manages two vaults (one for the currency, one for USDF), and sell fee rates (in basis points)
 - **Trading (Buy/Sell):** Allows users to buy currency tokens by depositing base tokens or sell currency tokens for base tokens. Fees are applied on sells, and the pool uses a deterministic pricing model via a discrete bonding curve logic found in `flipcash_api`
 - **Metadata Retrieval:** Exposes account data for currencies and pools, including authorities, mints, vaults, and fees
 
 ## CLI
 
-The Flipcash CLI is a command-line interface tool built in Rust for interacting with the Flipcash program. Flipcash provides a Solana-based protocol for creating custom currencies backed by a base mint (e.g. a stablecoin like USDF), managing liquidity pools, and facilitating buy/sell operations on those currencies. The CLI allows users to create test mints, initialize currencies and pools, retrieve metadata, and perform trades.
+The Flipcash CLI is a command-line interface tool built in Rust for interacting with the Flipcash program. Flipcash provides a Solana-based protocol for creating custom currencies backed by USDF, managing liquidity pools, and facilitating buy/sell operations on those currencies. The CLI allows users to initialize currencies and pools, retrieve metadata, and perform trades.
 
 The CLI supports various Solana clusters (localnet, mainnet, devnet, testnet, or custom RPC URLs) and requires a Solana keypair for signing transactions.
 
@@ -67,32 +67,10 @@ These options are available for all commands and can be specified before the sub
 
 Example usage:
 ```
-flipcash-cli --keypair /path/to/keypair.json --cluster d create-currency --name "MyToken" --symbol "MTK" --base-mint <PUBKEY>
+flipcash-cli --keypair /path/to/keypair.json --cluster d create-currency --name "MyToken" --symbol "MTK"
 ```
 
 ## Commands
-
-### create-base-mint
-
-Creates a new base mint (e.g. a test USDF-like token) for testing purposes. This includes:
-- Creating the mint account
-- Creating an Associated Token Account (ATA) for the fee-payer
-- Minting an initial amount of tokens to the ATA
-
-**Usage:**
-```
-flipcash-cli create-base-mint [OPTIONS]
-```
-
-**Options:**
-- `--decimals <U8>`: Number of decimal places for the mint. Default: 6
-- `--initial-amount <U64>`: Initial amount of tokens to mint (in smallest units, e.g. 1_000_000_000_000 for 1,000,000 tokens with 6 decimals). Default: 1_000_000_000_000
-
-**Output:**
-- Prints the mint address and transaction signatures for creation, ATA, and minting
-
-**Functionality in Flipcash Program:**
-- This is a utility command for testing. It uses SPL Token program functions to create a mint, not directly interacting with the core logic of the Flipcash program
 
 ### create-currency
 
@@ -100,13 +78,12 @@ Creates a new currency mint and its associated liquidity pool on the Flipcash pr
 
 **Usage:**
 ```
-flipcash-cli create-currency --name <STRING> --symbol <STRING> --base-mint <PUBKEY>
+flipcash-cli create-currency --name <STRING> --symbol <STRING>
 ```
 
 **Options:**
 - `--name <STRING>`: Name of the currency (max 32 characters). Required
 - `--symbol <STRING>`: Symbol of the currency (max 8 characters). Required
-- `--base-mint <PUBKEY>`: Public key of the base mint (e.g. USDF mint). Required
 
 **Output:**
 - Prints transaction signatures for currency and pool creation
@@ -146,13 +123,12 @@ Buys tokens from the pool using base tokens (e.g. spend USDF to buy the custom c
 
 **Usage:**
 ```
-flipcash-cli buy --mint <PUBKEY> --base-mint <PUBKEY> --amount <F64>
+flipcash-cli buy --mint <PUBKEY> --amount <F64>
 ```
 
 **Options:**
 - `--mint <PUBKEY>`: Public key of the currency mint to buy. Required
-- `--base-mint <PUBKEY>`: Public key of the base mint (e.g. USDF). Required
-- `--amount <F64>`: Amount of base tokens to spend (e.g. 100.50 USDF). Required
+- `--amount <F64>`: Amount of USDF to spend (e.g. 100.50). Required
 
 **Output:**
 - Prints the transaction signature if successful
@@ -168,12 +144,11 @@ Sells tokens to the pool in exchange for base tokens (e.g. sell custom currency 
 
 **Usage:**
 ```
-flipcash-cli sell --mint <PUBKEY> --base-mint <PUBKEY> --amount <F64>
+flipcash-cli sell --mint <PUBKEY> --amount <F64>
 ```
 
 **Options:**
 - `--mint <PUBKEY>`: Public key of the currency mint to sell. Required
-- `--base-mint <PUBKEY>`: Public key of the base mint (e.g. USDF). Required
 - `--amount <F64>`: Amount of currency tokens to sell (e.g. 100.50). Required
 
 **Output:**
@@ -187,16 +162,15 @@ flipcash-cli sell --mint <PUBKEY> --base-mint <PUBKEY> --amount <F64>
 
 ### burn-fees
 
-Burns base tokens (e.g. USDF) accumulated for sell fees
+Burns USDF accumulated from sell fees.
 
 **Usage:**
 ```
-flipcash-cli burn-fees --mint <PUBKEY> --base-mint <PUBKEY>
+flipcash-cli burn-fees --mint <PUBKEY>
 ```
 
 **Options:**
-- `--mint <PUBKEY>`: Public key of the currency mint to sell. Required
-- `--base-mint <PUBKEY>`: Public key of the base mint (e.g. USDF). Required
+- `--mint <PUBKEY>`: Public key of the currency mint. Required
 
 **Output:**
 - Prints the transaction signature if successful.
@@ -208,32 +182,27 @@ flipcash-cli burn-fees --mint <PUBKEY> --base-mint <PUBKEY>
 
 ## Examples
 
-1. Create a test base mint on localnet:
+1. Create a new currency:
    ```
-   flipcash-cli create-base-mint --decimals 6 --initial-amount 1000000000000
-   ```
-
-2. Create a new currency:
-   ```
-   flipcash-cli create-currency --name "FlipToken" --symbol "FLIP" --base-mint <USDF_MINT_PUBKEY>
+   flipcash-cli create-currency --name "FlipToken" --symbol "FLIP"
    ```
 
-3. Get currency details:
+2. Get currency details:
    ```
    flipcash-cli get-currency --mint <CURRENCY_MINT_PUBKEY>
    ```
 
-4. Buy 100 base units:
+3. Buy 100 USDF worth of tokens:
    ```
-   flipcash-cli buy --mint <CURRENCY_MINT_PUBKEY> --base-mint <USDF_MINT_PUBKEY> --amount 100.0
-   ```
-
-5. Sell 50 tokens:
-   ```
-   flipcash-cli sell --mint <CURRENCY_MINT_PUBKEY> --base-mint <USDF_MINT_PUBKEY> --amount 50.0
+   flipcash-cli buy --mint <CURRENCY_MINT_PUBKEY> --amount 100.0
    ```
 
-6. Burn fees:
+4. Sell 50 tokens:
    ```
-   flipcash-cli burn-fees --mint <CURRENCY_MINT_PUBKEY> --base-mint <USDF_MINT_PUBKEY>
+   flipcash-cli sell --mint <CURRENCY_MINT_PUBKEY> --amount 50.0
+   ```
+
+5. Burn fees:
+   ```
+   flipcash-cli burn-fees --mint <CURRENCY_MINT_PUBKEY>
    ```

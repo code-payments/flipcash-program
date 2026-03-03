@@ -1,8 +1,12 @@
+use solana_program::{pubkey, pubkey::Pubkey};
+
 pub const MINT: &[u8]           = b"mint";
 pub const CURRENCY: &[u8]       = b"currency";
 pub const POOL: &[u8]           = b"pool";
 pub const TREASURY: &[u8]       = b"treasury";
 pub const METADATA: &[u8]       = b"metadata";
+
+pub const USDF_BASE_MINT: Pubkey = pubkey!("5AMAA9JV9H97YYVxx8F6FsCMmTwXSuTTQneiup4RYAUQ");
 
 pub const METADATA_URI: &str    = "https://currency.flipcash.com/{}/metadata.json";
 

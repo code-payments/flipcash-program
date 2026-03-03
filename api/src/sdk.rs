@@ -38,7 +38,7 @@ pub fn build_initialize_pool_ix(
     authority: Pubkey,
     currency: Pubkey,
     target_mint: Pubkey,
-    base_mint: Pubkey,    // Probably USDC
+    base_mint: Pubkey,
 
     sell_fee: u16,
     ) -> Instruction {

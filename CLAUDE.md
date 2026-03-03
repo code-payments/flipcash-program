@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Flipcash is a Solana program for creating custom currencies with automated market-making via an exponential bonding curve. Each currency has its own SPL token mint and liquidity pool backed by a base mint (typically USDC or similar stablecoin).
+Flipcash is a Solana program for creating custom currencies with automated market-making via an exponential bonding curve. Each currency has its own SPL token mint and liquidity pool backed by USDF (`5AMAA9JV9H97YYVxx8F6FsCMmTwXSuTTQneiup4RYAUQ`).
 
 **Program ID:** `ccJYP5gjZqcEHaphcxAZvkxCrnTVfYMjyhSYkpQtf8Z`
 
@@ -70,7 +70,8 @@ See `api/src/pda.rs` for the exact derivation functions.
 - Created by `InitializeCurrencyIx` instruction
 
 **LiquidityPool** (`api/src/state/pool.rs`):
-- Links currency to base mint with two vaults (mint_a/target and mint_b/base)
+- Links currency to USDF base mint with two vaults (mint_a/target and mint_b/base)
+- Base mint is hardcoded to USDF (`USDF_BASE_MINT` in `api/src/consts.rs`) and enforced on pool initialization
 - Stores `sell_fee` in basis points (e.g., 50 = 0.5%)
 - Created by `InitializePoolIx` instruction
 
@@ -128,19 +129,16 @@ The CLI binary is named `flipcash` (defined in `cli/Cargo.toml`).
 
 **Common workflow**:
 ```bash
-# 1. Create test base mint (e.g., fake USDC)
-cargo run --bin flipcash -- create-base-mint --decimals 6 --initial-amount 1000000000000
+# 1. Create currency
+cargo run --bin flipcash -- create-currency --name "FlipToken" --symbol "FLIP"
 
-# 2. Create currency
-cargo run --bin flipcash -- create-currency --name "FlipToken" --symbol "FLIP" --base-mint <BASE_MINT_PUBKEY>
+# 2. Buy tokens
+cargo run --bin flipcash -- buy --mint <CURRENCY_MINT> --amount 100.0
 
-# 3. Buy tokens
-cargo run --bin flipcash -- buy --mint <CURRENCY_MINT> --base-mint <BASE_MINT> --amount 100.0
+# 3. Sell tokens
+cargo run --bin flipcash -- sell --mint <CURRENCY_MINT> --amount 50.0
 
-# 4. Sell tokens
-cargo run --bin flipcash -- sell --mint <CURRENCY_MINT> --base-mint <BASE_MINT> --amount 50.0
-
-# 5. Get currency info
+# 4. Get currency info
 cargo run --bin flipcash -- get-currency --mint <CURRENCY_MINT>
 ```
 
@@ -148,6 +146,7 @@ cargo run --bin flipcash -- get-currency --mint <CURRENCY_MINT>
 
 Defined in `api/src/consts.rs`:
 
+- `USDF_BASE_MINT` - Hardcoded USDF base mint (`5AMAA9JV9H97YYVxx8F6FsCMmTwXSuTTQneiup4RYAUQ`)
 - `TOKEN_DECIMALS: u8 = 10` - All currencies use 10 decimals
 - `MAX_TOKEN_SUPPLY: u64 = 21_000_000` - Maximum supply per currency
 - `QUARKS_PER_TOKEN: u64 = 10_000_000_000` - Smallest unit (10^10)

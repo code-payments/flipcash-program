@@ -16,7 +16,7 @@ pub async fn buy(
     signer: &Keypair,
     mint: Pubkey,
     base_mint: Pubkey,
-    amount: f64, // Amount in USDC
+    amount: f64, // Amount in USDF
 ) -> Result<Signature> {
 
     let buyer = signer.pubkey();
@@ -37,7 +37,7 @@ pub async fn buy(
         println!("Created buyer base ATA: {}. Signature: {}", buyer_base_ata, base_ata_sig);
     }
 
-    // Convert amount (in USDC) to token amount
+    // Convert amount (in USDF) to token amount
     let in_amount = (amount * 10f64.powi(DECIMAL_PLACES as i32)) as u64;
     let min_amount_out = 0; // Allow any output amount for simplicity
 

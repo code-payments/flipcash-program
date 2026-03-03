@@ -12,7 +12,7 @@ pub struct LiquidityPool {
 
     // SPL token accounts
     pub mint_a: Pubkey,           // SPL Mint A (target)
-    pub mint_b: Pubkey,           // SPL Mint B (base, probably USDC)
+    pub mint_b: Pubkey,           // SPL Mint B (base hardcoded to USDF at initialization)
     pub vault_a: Pubkey,          // Vault A (target)
     pub vault_b: Pubkey,          // Vault B (base)                                  
 

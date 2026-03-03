@@ -47,6 +47,11 @@ pub fn process_initialize_pool(accounts: &[AccountInfo], data: &[u8]) -> Program
         "Target and base mints must be different"
     )?;
 
+    check_condition(
+        base_mint_info.key.eq(&USDF_BASE_MINT),
+        "Base mint must be USDF"
+    )?;
+
     check_uninitialized_pda(
         pool_info,
         &[ POOL, currency_info.key.as_ref() ],

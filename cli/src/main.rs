@@ -2,12 +2,12 @@ mod keypair;
 
 use clap::{Parser, Subcommand};
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use solana_sdk::pubkey::Pubkey;
 use std::path::PathBuf;
 use std::str::FromStr;
 use anyhow::Result;
 use flipcash_api::prelude::*;
-use flipcash_client::{create_mint, create_ata, mint_to, get_currency_account, get_pool_account, program};
+use flipcash_client::{get_currency_account, get_pool_account, program};
 use keypair::{get_keypair_path, get_payer};
 
 #[derive(Debug, Clone)]
@@ -70,15 +70,6 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Creates a new base mint (e.g., USDC) for testing, with an ATA and initial tokens
-    CreateBaseMint {
-        #[arg(long, default_value_t = 6, help = "Decimals for the base mint")]
-        decimals: u8,
-
-        #[arg(long, default_value_t = 1_000_000_000_000, help = "Initial amount of tokens to mint (in smallest units, e.g., 1_000_000_000_000 = 1,000,000 USDC for 6 decimals)")]
-        initial_amount: u64,
-    },
-
     /// Creates a new currency and its associated pool
     CreateCurrency {
         #[arg(long, help = "Name of the currency (max 32 characters)")]
@@ -86,9 +77,6 @@ enum Commands {
 
         #[arg(long, help = "Symbol of the currency (max 8 characters)")]
         symbol: String,
-
-        #[arg(long, help = "Base mint address (e.g., USDC mint)")]
-        base_mint: Pubkey,
     },
 
     /// Retrieves metadata for a currency and its pool
@@ -102,10 +90,7 @@ enum Commands {
         #[arg(long, help = "Currency mint address")]
         mint: Pubkey,
 
-        #[arg(long, help = "Base mint address (e.g., USDC mint)")]
-        base_mint: Pubkey,
-
-        #[arg(long, help = "Amount to buy (in base tokens, e.g., 100.50 USDC)")]
+        #[arg(long, help = "Amount to buy (in base tokens, e.g., 100.50 USDF)")]
         amount: f64,
     },
 
@@ -113,9 +98,6 @@ enum Commands {
     Sell {
         #[arg(long, help = "Currency mint address")]
         mint: Pubkey,
-
-        #[arg(long, help = "Base mint address (e.g., USDC mint)")]
-        base_mint: Pubkey,
 
         #[arg(long, help = "Amount to sell (in tokens, e.g., 100.50)")]
         amount: f64,
@@ -125,9 +107,6 @@ enum Commands {
     BurnFees {
         #[arg(long, help = "Currency mint address")]
         mint: Pubkey,
-
-        #[arg(long, help = "Base mint address (e.g., USDC mint)")]
-        base_mint: Pubkey,
     },
 }
 
@@ -139,27 +118,13 @@ async fn main() -> Result<()> {
     let payer = get_payer(keypair_path)?;
 
     match cli.command {
-        Commands::CreateBaseMint { decimals, initial_amount } => {
-            // Create mint
-            let (mint, mint_signature) = create_mint(&client, &payer, decimals).await?;
-            println!("Base mint created. Mint: {}. Signature: {}", mint, mint_signature);
-
-            // Create ATA
-            let (ata, ata_signature) = create_ata(&client, &payer, &mint, &payer.pubkey(), None).await?;
-            println!("Created ATA {}. Signature: {}", ata, ata_signature);
-
-            // Mint tokens to ATA
-            let mint_to_signature = mint_to(&client, &payer, &mint, &ata, initial_amount).await?;
-            println!("Minted {} tokens to ATA {}. Signature: {}", initial_amount, ata, mint_to_signature);
-        }
-
-        Commands::CreateCurrency { name, symbol, base_mint } => {
+        Commands::CreateCurrency { name, symbol } => {
             let (currency_sig, pool_sig, mint_pda, currency_pda, pool_pda) = program::initialize(
                 &client,
                 &payer,
                 name.clone(),
                 symbol.clone(),
-                base_mint,
+                USDF_BASE_MINT,
             ).await?;
             println!("Currency created. Signature: {}", currency_sig);
             println!("Pool created. Signature: {}", pool_sig);
@@ -193,18 +158,18 @@ async fn main() -> Result<()> {
             println!("  Sell Fee: {} bps ({}%)", pool.sell_fee, pool.sell_fee as f64 / 100.0);
         }
 
-        Commands::Buy { mint, base_mint, amount } => {
-            let signature = program::buy(&client, &payer, mint, base_mint, amount).await?;
+        Commands::Buy { mint, amount } => {
+            let signature = program::buy(&client, &payer, mint, USDF_BASE_MINT, amount).await?;
             println!("Buy transaction successful. Signature: {}", signature);
         }
 
-        Commands::Sell { mint, base_mint, amount } => {
-            let signature = program::sell(&client, &payer, mint, base_mint, amount).await?;
+        Commands::Sell { mint, amount } => {
+            let signature = program::sell(&client, &payer, mint, USDF_BASE_MINT, amount).await?;
             println!("Sell transaction successful. Signature: {}", signature);
         }
 
-        Commands::BurnFees { mint, base_mint } => {
-            let signature = program::burn_fees(&client, &payer, mint, base_mint).await?;
+        Commands::BurnFees { mint } => {
+            let signature = program::burn_fees(&client, &payer, mint, USDF_BASE_MINT).await?;
             println!("Burn fees transaction successful. Signature: {}", signature);
         }
     }

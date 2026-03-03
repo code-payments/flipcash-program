@@ -17,7 +17,7 @@ pub async fn initialize(
     signer: &Keypair,
     name: String,
     symbol: String,
-    base_mint: Pubkey, // USDC mint
+    base_mint: Pubkey, // USDF mint
 ) -> Result<(Signature, Signature, Pubkey, Pubkey, Pubkey)> {
     if name.len() > MAX_NAME_LEN {
         return Err(anyhow!("Name exceeds {} characters", MAX_NAME_LEN));

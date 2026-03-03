@@ -194,6 +194,11 @@ fn sell_common<'info>(
         in_amount_raw = seller_target.amount();
     }
 
+    check_condition(
+        in_amount_raw > 0,
+        "No tokens for sale"
+    )?;
+
     let in_amount = to_numeric(in_amount_raw, mint_a_decimals)?;
     let new_supply = to_numeric(supply_from_bonding, mint_a_decimals)?
         .checked_sub(&in_amount)

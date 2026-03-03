@@ -191,6 +191,11 @@ fn buy_common<'info>(
         in_amount_raw = buyer_base.amount();
     }
 
+    check_condition(
+        in_amount_raw > 0,
+        "No value for buy"
+    )?;
+
     let tokens_left = to_numeric(tokens_left_raw, mint_a_decimals)?;
     let supply = to_numeric(supply_from_bonding, mint_a_decimals)?;
     let current_value = to_numeric(current_value_raw, mint_b_decimals)?;

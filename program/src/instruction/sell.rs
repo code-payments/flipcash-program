@@ -204,7 +204,10 @@ fn sell_common<'info>(
         .checked_sub(&in_amount)
         .ok_or(ProgramError::InvalidArgument)?;
     let value_left = to_numeric(value_left_raw, mint_b_decimals)?;
-    let after_fee_rate = from_basis_points(10000 - pool.sell_fee)?;
+    let after_fee_rate = from_basis_points(10000u16
+        .checked_sub(pool.sell_fee)
+        .ok_or(ProgramError::InvalidArgument)?
+    )?;
 
     let curve = DiscreteExponentialCurve::default();
     let zero = UnsignedNumeric::zero();

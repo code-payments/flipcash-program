@@ -210,9 +210,13 @@ fn buy_common<'info>(
     } else {
         uncapped_new_value
     };
-    let capped_in_amount = capped_new_value
-        .checked_sub(&current_value)
-        .ok_or(ProgramError::InvalidArgument)?;
+    let capped_in_amount = if capped_new_value.greater_than(&current_value) {
+        capped_new_value
+            .checked_sub(&current_value)
+            .ok_or(ProgramError::InvalidArgument)?
+    } else {
+        UnsignedNumeric::zero()
+    };
 
     let curve = DiscreteExponentialCurve::default();
     let zero = UnsignedNumeric::zero();

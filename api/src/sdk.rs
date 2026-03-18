@@ -189,6 +189,7 @@ pub fn build_buy_and_deposit_into_vm_ix(
 	vta_owner: Pubkey,
     in_amount: u64,
     min_amount_out: u64,
+    vm_memory_index: u16,
 ) -> Instruction {
     let (vault_a_pda, vault_a_bump) = find_vault_pda(&pool, &target_mint);
     let (vault_b_pda, vault_b_bump) = find_vault_pda(&pool, &base_mint);
@@ -214,9 +215,10 @@ pub fn build_buy_and_deposit_into_vm_ix(
             AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(VM_PROGRAM_ID, false),
         ],
-        data: BuyTokensIx::from_struct(ParsedBuyTokensIx {
+        data: BuyAndDepositIntoVmIx::from_struct(ParsedBuyAndDepositIntoVmIx {
             in_amount,
             min_amount_out,
+            vm_memory_index,
         }).to_bytes(),
     }
 }
@@ -234,6 +236,7 @@ pub fn build_sell_and_deposit_into_vm_ix(
 	vta_owner: Pubkey,
     in_amount: u64,
     min_amount_out: u64,
+    vm_memory_index: u16,
 ) -> Instruction {
     let (vault_a_pda, vault_a_bump) = find_vault_pda(&pool, &target_mint);
     let (vault_b_pda, vault_b_bump) = find_vault_pda(&pool, &base_mint);
@@ -259,9 +262,10 @@ pub fn build_sell_and_deposit_into_vm_ix(
             AccountMeta::new_readonly(spl_token::id(), false),
             AccountMeta::new_readonly(VM_PROGRAM_ID, false),
         ],
-        data: SellTokensIx::from_struct(ParsedSellTokensIx {
+        data: SellAndDepositIntoVmIx::from_struct(ParsedSellAndDepositIntoVmIx {
             in_amount,
             min_amount_out,
+            vm_memory_index,
         }).to_bytes(),
     }
 }

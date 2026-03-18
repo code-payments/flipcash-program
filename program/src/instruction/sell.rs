@@ -87,7 +87,7 @@ pub fn process_sell_and_deposit_into_vm(accounts: &[AccountInfo], data: &[u8]) -
     //solana_program::msg!("Args: {:?}", args);
 
     check_mut(pool_info)?;
-    check_mut(vm_authority_info)?;
+    check_signer(vm_authority_info)?;
     check_mut(vm_info)?;
     check_mut(vm_memory_info)?;
     check_program(vm_program_info, &VM_PROGRAM_ID)?;

@@ -271,7 +271,7 @@ pub fn build_sell_and_deposit_into_vm_ix(
 }
 
 pub fn build_burn_fees_ix(
-    payer: Pubkey,
+    authority: Pubkey,
     pool: Pubkey,
     base_mint: Pubkey,
 ) -> Instruction {
@@ -280,7 +280,7 @@ pub fn build_burn_fees_ix(
     Instruction {
         program_id: crate::ID,
         accounts: vec![
-            AccountMeta::new(payer, true),
+            AccountMeta::new(authority, true),
             AccountMeta::new(pool, false),
             AccountMeta::new(base_mint, false),
             AccountMeta::new(vault_b_pda, false),

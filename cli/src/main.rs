@@ -1,4 +1,5 @@
 mod keypair;
+mod swap;
 
 use clap::{Parser, Subcommand};
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -9,6 +10,7 @@ use anyhow::Result;
 use flipcash_api::prelude::*;
 use flipcash_client::{get_currency_account, get_pool_account, program};
 use keypair::{get_keypair_path, get_payer};
+use swap::mints;
 
 #[derive(Debug, Clone)]
 pub enum Cluster {
@@ -108,6 +110,11 @@ enum Commands {
         #[arg(long, help = "Currency mint address")]
         mint: Pubkey,
     },
+    /// Swap SOL or USDC for USDF using Jupiter
+    SwapToUsdf {
+        #[arg(long, default_value = "10.0")] amount: f64,
+        #[arg(long, default_value = "sol", value_parser = ["sol", "usdc"])] input: String,
+    },
 }
 
 #[tokio::main]
@@ -170,9 +177,14 @@ async fn main() -> Result<()> {
 
         Commands::BurnFees { mint } => {
             let signature = program::burn_fees(&client, &payer, mint, USDF_BASE_MINT).await?;
-            println!("Burn fees transaction successful. Signature: {}", signature);
+            println!("Burn fees successful. Signature: {}", signature);
+        }
+        Commands::SwapToUsdf { amount, input } => {
+            let mint = match input.as_str() { "sol" => mints::SOL, "usdc" => mints::USDC, _ => mints::SOL };
+            let lamports = if input == "sol" { (amount * 1e9) as u64 } else { (amount * 1e6) as u64 };
+            let sig = swap::swap_to_usdf(&client, &payer, lamports, mint).await?;
+            println!("Swap successful! Tx: {}", sig);
         }
     }
-
     Ok(())
 }

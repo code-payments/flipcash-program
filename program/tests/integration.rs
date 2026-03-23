@@ -193,19 +193,16 @@ fn run_integration() {
     let fees_before_burn = account.fees_accumulated;
     let vault_b_balance_before_burn = get_ata_balance(&svm, &vault_b_pda);
 
-    // BURN FEES
-    let random_payer = create_payer(&mut svm);
-    let random_payer_pk = random_payer.pubkey();
-
+    // BURN FEES - Only pool authority can burn fees
     let burn_ix = build_burn_fees_ix(
-        random_payer_pk,
+        payer_pk,  // Use pool authority, not random user
         pool_pda,
         usdf,
     );
     let blockhash = svm.latest_blockhash();
-    let tx = Transaction::new_signed_with_payer(&[burn_ix], Some(&random_payer_pk), &[&random_payer], blockhash);
+    let tx = Transaction::new_signed_with_payer(&[burn_ix], Some(&payer_pk), &[&payer], blockhash);
     let res = send_tx(&mut svm, tx);
-    assert!(res.is_ok(), "Burn fees should succeed");
+    assert!(res.is_ok(), "Burn fees should succeed when called by pool authority");
 
     let vault_b_balance_after_burn = get_ata_balance(&svm, &vault_b_pda);
     assert_eq!(vault_b_balance_before_burn - vault_b_balance_after_burn, fees_before_burn, "Vault B should have decreased by fees_accumulated");
@@ -213,6 +210,19 @@ fn run_integration() {
     let account = svm.get_account(&pool_pda).unwrap();
     let account = LiquidityPool::unpack(&account.data).unwrap();
     assert_eq!(account.fees_accumulated, 0, "Fees should be reset to 0 after burn");
+
+    // Verify that random users cannot burn fees
+    let random_user = create_payer(&mut svm);
+    let random_user_pk = random_user.pubkey();
+    let burn_ix_unauthorized = build_burn_fees_ix(
+        random_user_pk,
+        pool_pda,
+        usdf,
+    );
+    let blockhash = svm.latest_blockhash();
+    let tx_unauthorized = Transaction::new_signed_with_payer(&[burn_ix_unauthorized], Some(&random_user_pk), &[&random_user], blockhash);
+    let res_unauthorized = send_tx(&mut svm, tx_unauthorized);
+    assert!(res_unauthorized.is_err(), "Burn fees should fail when called by non-authority");
 }
 
 #[test]

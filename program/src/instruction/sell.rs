@@ -27,10 +27,9 @@ pub fn process_sell_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResu
     let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
 
     seller_base_info.as_token_account()?
-        .assert(|t| t.owner().eq(seller_info.key))?
         .assert(|t| t.mint().eq(base_mint_info.key))?;
 
-    let value_after_fee_raw= sell_common(
+    let value_after_fee_raw = sell_common(
         seller_info,
         target_mint_info,
         base_mint_info,

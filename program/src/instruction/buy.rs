@@ -25,7 +25,6 @@ pub fn process_buy_tokens(accounts: &[AccountInfo], data: &[u8]) -> ProgramResul
     let pool = pool_info.as_account::<LiquidityPool>(&flipcash_api::ID)?;
 
     buyer_target_info.as_token_account()?
-        .assert(|t| t.owner().eq(buyer_info.key))?
         .assert(|t| t.mint().eq(target_mint_info.key))?;
 
     let tokens_after_fee_raw= buy_common(

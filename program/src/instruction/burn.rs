@@ -3,7 +3,7 @@ use flipcash_api::prelude::*;
 
 pub fn process_burn_fees(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResult {
     let [
-        payer_info,
+        authority_info,
         pool_info,
         base_mint_info,
         base_vault_info,
@@ -13,13 +13,19 @@ pub fn process_burn_fees(accounts: &[AccountInfo], _data: &[u8]) -> ProgramResul
     };
 
     // Basic checks
-    check_signer(payer_info)?;
+    check_signer(authority_info)?;
     check_mut(pool_info)?;
     check_mut(base_mint_info)?;
     check_mut(base_vault_info)?;
     check_program(token_program_info, &spl_token::id())?;
 
     let pool = pool_info.as_account_mut::<LiquidityPool>(&flipcash_api::ID)?;
+
+    // Verify authority is the pool authority
+    check_condition(
+        pool.authority == *authority_info.key,
+        "Invalid authority: must be pool authority"
+    )?;
 
     // Validate accounts match the pool
     check_condition(

@@ -35,6 +35,12 @@ The Reserve Contract provides the following core features:
 - **Trading (Buy/Sell):** Allows users to buy currency tokens by depositing base tokens or sell currency tokens for base tokens. Fees are applied on sells, and the pool uses a deterministic pricing model via a discrete bonding curve logic found in `flipcash_api`
 - **Metadata Retrieval:** Exposes account data for currencies and pools, including authorities, mints, vaults, and fees
 
+## BBB Bounty Program
+
+This repository participates in the BigBeautifulBounty (BBB) security challenge. See [BOUNTY.md](BOUNTY.md) for testing setup.
+
+**Quick USDF Swap:** `cargo run --bin flipcash -- swap-to-usdf --amount 100 --input sol`
+
 ## CLI
 
 The Flipcash CLI is a command-line interface tool built in Rust for interacting with the Flipcash program. Flipcash provides a Solana-based protocol for creating custom currencies backed by USDF, managing liquidity pools, and facilitating buy/sell operations on those currencies. The CLI allows users to initialize currencies and pools, retrieve metadata, and perform trades.

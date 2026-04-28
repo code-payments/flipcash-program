@@ -1,0 +1,31 @@
+[package]
+name = "flipcash-jupiter-adapter"
+description = "Jupiter Amm trait implementation for the Flipcash bonding curve"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+readme.workspace = true
+
+documentation = "https://docs.rs/flipcash-jupiter-adapter"
+
+[dependencies]
+flipcash-api.workspace = true
+
+anyhow.workspace = true
+brine-fp.workspace = true
+solana-program.workspace = true
+solana-sdk.workspace = true
+spl-token.workspace = true
+spl-associated-token-account.workspace = true
+
+jupiter-amm-interface = "0.6"
+rust_decimal = "1.36"
+
+[dev-dependencies]
+litesvm.workspace = true
+litesvm-token = "0.5.0"
+mpl-token-metadata.workspace = true
+ahash = "0.8"

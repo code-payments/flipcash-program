@@ -1,5 +1,5 @@
 [workspace]
-members = ["api", "program", "client", "cli"]
+members = ["api", "program", "client", "cli", "jupiter-adapter"]
 resolver = "2"
 
 [workspace.package]
